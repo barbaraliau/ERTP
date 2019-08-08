@@ -63,9 +63,6 @@ Description must be truthy: ${description}`;
       getName() {
         return name;
       },
-      getName() {
-        return _name;
-      },
     });
 
     // makePaymentTrait is defined in the passed-in configuration and adds
