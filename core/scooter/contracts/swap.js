@@ -11,6 +11,15 @@ const isMatch = (priorOffer, newOffer) =>
   priorOffer[0] === newOffer[1] && priorOffer[1] === newOffer[0];
 
 const swapSrcs = harden({
+  startState: 'empty',
+  allowedTransitions: [
+    ['empty', ['open']],
+    ['open', ['reallocating', 'cancelled']],
+    ['reallocating', ['dispersing']],
+    ['dispersing', ['closed']],
+    ['cancelled', []],
+    ['closed', []],
+  ],
   areIssuersValid: issuers => issuers.length === 2,
   isValidOffer: (_data, issuers, offersSoFar, newOffer) => {
     const hasOkFormat =

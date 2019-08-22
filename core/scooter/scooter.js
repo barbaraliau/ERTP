@@ -1,46 +1,10 @@
 import harden from '@agoric/harden';
 
 import { insist } from '../../util/insist';
-
-const makeStateMachine = () => {
-  let state = 'empty';
-  const stateMachine = harden({
-    canOpen: _ => state === 'empty',
-    open: _ => {
-      insist(stateMachine.canOpen())`state ${state} is not empty`;
-      state = 'open';
-    },
-    canAllocate: _ => state === 'open',
-    allocate: () => {
-      insist(stateMachine.canAllocate())`state ${state} is not open`;
-      state = 'allocating';
-    },
-    canCancel: _ => state === 'open',
-    cancel: () => {
-      insist(stateMachine.canCancel())`state ${state} is not open`;
-      state = 'cancelled';
-    },
-    canDisperse: _ => state === 'allocating',
-    disperse: () => {
-      insist(stateMachine.canDisperse())`state ${state} is not allocating`;
-      state = 'dispersing';
-    },
-    canClose: _ => state === 'dispersing',
-    close: () => {
-      insist(stateMachine.canClose())`state ${state} is not dispersing`;
-      state = 'closed';
-    },
-    getState: _ => state,
-  });
-};
-
-const makeInitialState = (strategies, players) => {
-  // make an array per player of empty quantities per issuer/strategy
-  return players.map(_ => strategies.map(strategy => strategy.empty()));
-};
+import { makeStateMachine } from './stateMachine';
 
 const makeInstitution = srcs => {
-  const stateMachine = makeStateMachine();
+  const sm = makeStateMachine(srcs.startState, srcs.allowedTransitions);
 
   // make safe for mechanism code to have (harden?)
   let issuers; // array
@@ -124,6 +88,9 @@ const makeInstitution = srcs => {
     );
   }
 
+  // Escrow does the escrowing, but also updates the `purseQuantities`
+  // (the current balance of the purses) and `quantities` (the amount
+  // escrowed per player per issuer)
   function escrow(rules, payments) {
     const quantitiesForPlayer = [];
     // has side-effects
@@ -149,60 +116,66 @@ const makeInstitution = srcs => {
     quantities.push(quantitiesForPlayer);
   }
 
+  function initializeRecordkeeping(submittedIssuers) {
+    issuers = submittedIssuers;
+    // we have a lot of round trips here. TODO: fewer round trips
+    assays = issuers.map(issuer => E(issuer).getAssay());
+    strategies = issuers.map(issuer => E(issuer).getStrategy());
+    purses = issuers.map(issuer => E(issuer).makeEmptyPurse());
+    purseQuantities = strategies.map(strategy => strategy.empty());
+    quantities = srcs.initQuantities();
+    offers = srcs.initOffers();
+  }
+
   const institution = harden({
     init(submittedIssuers) {
-      insist(stateMachine.canOpen())`could not be opened`;
+      insist(sm.canTransitionTo('open'))`could not be opened`;
       insist(srcs.areIssuersValid(submittedIssuers))`issuers are not valid`;
-      issuers = submittedIssuers;
-
-      // we have a lot of round trips here. TODO: fewer round trips
-      assays = issuers.map(issuer => E(issuer).getAssay());
-      strategies = issuers.map(issuer => E(issuer).getStrategy());
-      purses = issuers.map(issuer => E(issuer).makeEmptyPurse());
-      purseQuantities = strategies.map(strategy => strategy.empty());
-
-      quantities = srcs.initQuantities();
-      offers = srcs.initOffers();
-
-      stateMachine.open();
+      initializeRecordkeeping(submittedIssuers);
+      sm.transitionTo('open');
       return institution;
     },
     getIssuers: _ => harden(issuers),
     async makeOffer(rules, payments) {
-      // TODO: maybe handle bad/incorrect behavior by sending back payment
+      // TODO: handle bad/incorrect behavior by sending back payment.
       // Right now we just keep it.
-      insist(stateMachine.canAllocate())`could not receive offer`;
+
+      insist(sm.canTransitionTo('reallocating'))`could not receive offer`;
 
       // Check that the offers are backed up with valid payments and
       // escrow the payments.
       await Promise.all(escrow(rules, payments));
 
-      // additionally check that rules are valid for this particular
-      // contract
-      if (srcs.isValidOffer(data, issuers, offers, rules)) {
-        offers.push(rules);
-        quantities.push(strategies.map(strategy => strategy.empty()));
-
-        // check if canAllocate whenever a valid offer is made
-        if (srcs.canAllocate(offers)) {
-          stateMachine.allocate();
-          const reallocation = srcs.allocate(quantities);
-
-          // check conservation of rights on quantities only
-          insistRightsConserved(reallocation);
-
-          const amounts = makeAmounts(quantities);
-
-          // check offer safety
-          insistOfferSafety(amounts);
-
-          payments = makePayments(amounts);
-
-          stateMachine.disperse();
-        }
+      // fail-fast if the offer isn't valid (TODO: reject promise)
+      if (!srcs.isValidOffer(contractData, issuers, offers, rules)) {
+        return;
       }
+
+      // keep the valid offer
+      offers.push(rules);
+
+      // check if canReallocate whenever a valid offer is made
+      if (!srcs.canReallocate(offers)) {
+        return;
+      }
+
+      // we can reallocate
+      sm.transitionTo('reallocating');
+      const reallocation = srcs.reallocate(quantities);
+
+      // check conservation of rights on quantities only
+      insistRightsConserved(reallocation);
+
+      const amounts = makeAmounts(quantities);
+
+      // check offer safety on the amounts
+      insistOfferSafety(amounts);
+
+      allocatedPayments = makePayments(amounts);
+
+      sm.transitionTo('disperse');
     },
-    claim()
+    claim: _ => {},
   });
   return institution;
 };
