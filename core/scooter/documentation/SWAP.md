@@ -5,8 +5,8 @@ you the asset and ask you to send me the other kind back. But, you
 could choose to behave opportunistically and take my asset and give
 nothing back. To solve this problem, the Swap contract allows users to
 securely trade one kind of eright for another kind, leveraging Scooter
-for escrow and offer-safety. At no time does any user have both of the
-assets under their control. 
+for escrow and offer-safety. At no time does any user have the
+opportunity to behave opportunistically.
 
 ## Bid Format 
 
@@ -18,11 +18,15 @@ issuer1 with the brand issuer2:
 swap.init([moolaIssuer, bucksIssuer]);
 ```
 
-The first user can create an array of rules per issuer/brand. For instance, maybe they have 3 moola to offer and want 5
-bucks in return. If they don't know how to structure the rules because they don't know the order of the issuers, they
-can call `getIssuers` on the swap object to get the array of issuers. If any of their rules are `haveExactly` or
-`haveAtLeast`, the accompanying payment in payments must equal or be more than the amount specified in the rule.
-`wantExactly` is used to find a matching rule and enforce offer safety.
+The first user can create an array of rules per issuer/brand. For
+instance, maybe they have 3 moola to offer and want 5 bucks in return.
+If they don't know how to structure the rules because they don't know
+the order of the issuers, they can call `getIssuers` on the swap
+object to get the array of issuers. If any of their rules are
+`haveExactly` or `haveAtLeast`, the accompanying payment in payments
+must equal or be more than the amount specified in the rule.
+`wantExactly` is used to find a matching rule and enforce offer
+safety.
 
 ```js
 

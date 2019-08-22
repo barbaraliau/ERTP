@@ -42,17 +42,20 @@ const makeInitialState = (strategies, players) => {
 const makeInstitution = srcs => {
   const stateMachine = makeStateMachine();
 
-  // safe for mechanism code to have
+  // make safe for mechanism code to have (harden?)
   let issuers; // array
   let assays; // array
   let strategies; // array
-  let allocatedPayments; // array of arrays
-  let offers; // array of arrays (declarative understanding)
-  let quantities; // array of arrays (quantities)
+  // Matrices
+  let allocatedPayments; // payments to be distributed per player
+  let offers; // rules per player
+  let quantities; // quantities per player
 
   // hold closely - do not give to mechanism
-  let purses;
-  let purseQuantities;
+  let purses; // array
+  let purseQuantities; // array
+
+  let contractData; // an object that is defined by the contract
 
   const bothTrue = (prev, curr) => prev && curr;
 
@@ -149,6 +152,7 @@ const makeInstitution = srcs => {
   const institution = harden({
     init(submittedIssuers) {
       insist(stateMachine.canOpen())`could not be opened`;
+      insist(srcs.areIssuersValid(submittedIssuers))`issuers are not valid`;
       issuers = submittedIssuers;
 
       // we have a lot of round trips here. TODO: fewer round trips
@@ -156,6 +160,9 @@ const makeInstitution = srcs => {
       strategies = issuers.map(issuer => E(issuer).getStrategy());
       purses = issuers.map(issuer => E(issuer).makeEmptyPurse());
       purseQuantities = strategies.map(strategy => strategy.empty());
+
+      quantities = srcs.initQuantities();
+      offers = srcs.initOffers();
 
       stateMachine.open();
       return institution;
@@ -172,7 +179,7 @@ const makeInstitution = srcs => {
 
       // additionally check that rules are valid for this particular
       // contract
-      if (srcs.isValidOffer(offers, rules)) {
+      if (srcs.isValidOffer(data, issuers, offers, rules)) {
         offers.push(rules);
         quantities.push(strategies.map(strategy => strategy.empty()));
 

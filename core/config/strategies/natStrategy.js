@@ -19,6 +19,8 @@ const natStrategy = harden({
   equals: (left, right) => left === right,
   with: (left, right) => Nat(left + right),
   without: (whole, part) => Nat(whole - part),
+  divide: (dividend, divisor) => Nat(Math.round(dividend / divisor)),
+  multiply: (left, right) => Nat(left * right),
 });
 
 export default natStrategy;
