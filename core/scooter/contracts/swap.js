@@ -21,7 +21,7 @@ const swapSrcs = harden({
     ['closed', []],
   ],
   areIssuersValid: issuers => issuers.length === 2,
-  isValidOffer: (_data, issuers, offersSoFar, newOffer) => {
+  isValidOffer: (issuers, offersSoFar, newOffer, _data) => {
     const hasOkFormat =
       hasOkLength(newOffer) &&
       hasOkContent(newOffer) &&
@@ -37,3 +37,7 @@ const swapSrcs = harden({
   allocate: allocations => harden([allocations[1], allocations[0]]),
   cancel: allocations => harden(allocations),
 });
+
+harden(swapSrcs);
+
+export { swapSrcs };

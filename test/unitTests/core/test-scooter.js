@@ -2,7 +2,7 @@ import { test } from 'tape-promise/tape';
 
 import { makeStateMachine } from '../../../core/scooter/stateMachine';
 
-test.only('stateMachine', t => {
+test('stateMachine', t => {
   try {
     const startState = 'empty';
     const allowedTransitions = [
