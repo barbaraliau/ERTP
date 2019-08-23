@@ -1,7 +1,11 @@
+/* global E makePromise */
 import harden from '@agoric/harden';
 
 import { insist } from '../../util/insist';
 import { makeStateMachine } from './stateMachine';
+import { isOfferSafeForAll, areRightsConserved } from './isOfferSafe';
+import { mapArrayOnMatrix } from './utils';
+import { toAmountMatrix } from './hoists';
 
 const makeInstitution = srcs => {
   const sm = makeStateMachine(srcs.startState, srcs.allowedTransitions);
@@ -21,72 +25,13 @@ const makeInstitution = srcs => {
 
   let contractData; // an object that is defined by the contract
 
-  const bothTrue = (prev, curr) => prev && curr;
-
-  function makePayment(purseIndex, amount) {
-    return purses[purseIndex].withdraw(amount, 'payout');
+  function makePayments(amountsMatrix) {
+    const makePayment = (purseIndex, amount) =>
+      purses[purseIndex].withdraw(amount, 'payout');
+    return mapArrayOnMatrix(amountsMatrix, makePayment);
   }
 
-  function makePayments(amounts) {
-    return amounts.map(amountForPlayer => amountForPlayer.map(makePayment));
-  }
 
-  // https://stackoverflow.com/questions/17428587/transposing-a-2d-array-in-javascript/41772644#41772644
-  const transpose = matrix =>
-    matrix.reduce(
-      (acc, row) => row.map((_, i) => [...(acc[i] || []), row[i]]),
-      [],
-    );
-
-  function insistRightsConserved(allocation) {
-    const transposedAllocation = transpose(allocation);
-    const totals = transposedAllocation.map((quantitiesPerIssuer, i) => {
-      return quantitiesPerIssuer.reduce(strategies[i].with);
-    });
-    totals.map((total, i) =>
-      insist(strategies[i].equals(total, purseQuantities[i])),
-    );
-  }
-
-  // allocationForPlayer is an array of quantities in the same order
-  // as the rules array. That is, the same index refers to quantities
-  // and rules for the same issuer.
-  function isOfferSafe(rulesForPlayer, amountsForPlayer) {
-    const refundOkArray = [];
-    const winningsOkArray = [];
-
-    // has side-effects
-    // eslint-disable-next-line array-callback-return
-    rulesForPlayer.map((rule, i) => {
-      const allocatedAmount = amountsForPlayer[i];
-      if (rule.rule === 'haveExactly') {
-        refundOkArray.push(assays[i].includes(allocatedAmount), rule.amount);
-        winningsOkArray.push(true);
-      }
-      if (rule.rule === 'wantExactly') {
-        winningsOkArray.push(assays[i].includes(allocatedAmount), rule.amount);
-        refundOkArray.push(true);
-      }
-    });
-    const refundOk = refundOkArray.reduce(bothTrue);
-    const winningsOk = winningsOkArray.reduce(bothTrue);
-
-    return refundOk || winningsOk;
-  }
-
-  function insistOfferSafety(amounts) {
-    const offerSafeArray = offers.map((rulesForPlayer, i) => {
-      return isOfferSafe(rulesForPlayer, amounts[i]);
-    });
-    const offerSafe = offerSafeArray.reduce(bothTrue);
-    insist(offerSafe)`Allocation was not "offer-safe"`;
-  }
-
-  function makeAmounts(allocatedQuantities) {
-    return allocatedQuantities.map(quantitiesForPlayer =>
-      quantitiesForPlayer.map((quantity, i) => assays[i].make(quantity)),
-    );
-  }
 
   // Escrow does the escrowing, but also updates the `purseQuantities`
   // (the current balance of the purses) and `quantities` (the amount
@@ -99,7 +44,7 @@ const makeInstitution = srcs => {
       // if the user's contractual understanding includes
       // "haveExactly", make sure that they have supplied the
       // coordinating payment
-      if (Object.prototype.hasOwnProperty.call(rules[i], 'haveExactly')) {
+      if (rules[i].rule === 'haveExactly') {
         const amount = await purse.depositExactly(
           rules[i].haveExactly,
           payments[i],
@@ -139,6 +84,7 @@ const makeInstitution = srcs => {
     async makeOffer(rules, payments) {
       // TODO: handle bad/incorrect behavior by sending back payment.
       // Right now we just keep it.
+      const winnings = makePromise();
 
       insist(sm.canTransitionTo('reallocating'))`could not receive offer`;
 
@@ -164,12 +110,16 @@ const makeInstitution = srcs => {
       const reallocation = srcs.reallocate(quantities);
 
       // check conservation of rights on quantities only
-      insistRightsConserved(reallocation);
+      insist(
+        areRightsConserved(reallocation),
+      )`Rights are not conserved in the proposed reallocation`;
 
-      const amounts = makeAmounts(quantities);
+      const amounts = toAmountMatrix(quantities);
 
       // check offer safety on the amounts
-      insistOfferSafety(amounts);
+      insist(
+        isOfferSafeForAll(assays, offers, amounts),
+      )`The proposed reallocation was not offer safe`;
 
       allocatedPayments = makePayments(amounts);
 

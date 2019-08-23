@@ -171,10 +171,10 @@ const runIsValidOfferTests = offersSoFar => {
 runIsValidOfferTests([]);
 
 // one offer so far
-runIsValidOfferTests([
-  { rule: 'haveExactly', amount: moolaIssuer.makeAmount(3) },
-  { rule: 'wantExactly', amount: simoleanIssuer.makeAmount(7) },
-]);
+// runIsValidOfferTests([
+//   { rule: 'haveExactly', amount: moolaIssuer.makeAmount(3) },
+//   { rule: 'wantExactly', amount: simoleanIssuer.makeAmount(7) },
+// ]);
 
 
 // test('swap.isValidOffer - one offer so far additional tests', t => {
