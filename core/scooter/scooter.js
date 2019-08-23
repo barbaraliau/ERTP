@@ -14,10 +14,10 @@ const makeInstitution = srcs => {
   let issuers; // array
   let assays; // array
   let strategies; // array
-  // Matrices
-  let allocatedPayments; // payments to be distributed per player
-  let offers; // rules per player
-  let quantities; // quantities per player
+  let results; // promises that need to be resolved to payments per player
+
+  let offers; // matrix: rules per player
+  let quantities; // matrix: quantities per player
 
   // hold closely - do not give to mechanism
   let purses; // array
@@ -30,8 +30,6 @@ const makeInstitution = srcs => {
       purses[purseIndex].withdraw(amount, 'payout');
     return mapArrayOnMatrix(amountsMatrix, makePayment);
   }
-
-
 
   // Escrow does the escrowing, but also updates the `purseQuantities`
   // (the current balance of the purses) and `quantities` (the amount
@@ -72,6 +70,21 @@ const makeInstitution = srcs => {
     offers = srcs.initOffers();
   }
 
+  function allocate() {
+    const reallocation = srcs.reallocate(quantities);
+    insist(
+      areRightsConserved(reallocation),
+    )`Rights are not conserved in the proposed reallocation`;
+
+    const amounts = toAmountMatrix(quantities);
+    insist(
+      isOfferSafeForAll(assays, offers, amounts),
+    )`The proposed reallocation was not offer safe`;
+
+    const payments = makePayments(amounts);
+    results.map((result, i) => result.res(payments[i]));
+  }
+
   const institution = harden({
     init(submittedIssuers) {
       insist(sm.canTransitionTo('open'))`could not be opened`;
@@ -84,46 +97,24 @@ const makeInstitution = srcs => {
     async makeOffer(rules, payments) {
       // TODO: handle bad/incorrect behavior by sending back payment.
       // Right now we just keep it.
-      const winnings = makePromise();
+      const result = makePromise();
 
-      insist(sm.canTransitionTo('reallocating'))`could not receive offer`;
-
-      // Check that the offers are backed up with valid payments and
-      // escrow the payments.
       await Promise.all(escrow(rules, payments));
 
-      // fail-fast if the offer isn't valid (TODO: reject promise)
+      // fail-fast if the offer isn't valid
       if (!srcs.isValidOffer(issuers, offers, rules, contractData)) {
-        return;
+        return result.reject('offer was invalid');
       }
 
       // keep the valid offer
       offers.push(rules);
+      results.push(result);
 
       // check if canReallocate whenever a valid offer is made
-      if (!srcs.canReallocate(offers)) {
-        return;
+      if (srcs.canReallocate(offers)) {
+        allocate();
       }
-
-      // we can reallocate
-      sm.transitionTo('reallocating');
-      const reallocation = srcs.reallocate(quantities);
-
-      // check conservation of rights on quantities only
-      insist(
-        areRightsConserved(reallocation),
-      )`Rights are not conserved in the proposed reallocation`;
-
-      const amounts = toAmountMatrix(quantities);
-
-      // check offer safety on the amounts
-      insist(
-        isOfferSafeForAll(assays, offers, amounts),
-      )`The proposed reallocation was not offer safe`;
-
-      allocatedPayments = makePayments(amounts);
-
-      sm.transitionTo('disperse');
+      return result.p;
     },
     claim: _ => {},
   });
