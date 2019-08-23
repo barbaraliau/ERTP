@@ -31,10 +31,10 @@ const swapSrcs = harden({
     }
     return hasOkFormat;
   },
-  canAllocate: offers => {
+  canReallocate: offers => {
     return offers.length === 2 && isMatch(offers[0], offers[1]);
   },
-  allocate: allocations => harden([allocations[1], allocations[0]]),
+  reallocate: allocations => harden([allocations[1], allocations[0]]),
   cancel: allocations => harden(allocations),
 });
 

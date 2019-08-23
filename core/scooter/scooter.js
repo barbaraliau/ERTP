@@ -71,7 +71,7 @@ const makeInstitution = srcs => {
   }
 
   function allocate() {
-    const reallocation = srcs.reallocate(quantities);
+    const reallocation = srcs.reallocate(quantities, offers);
     insist(
       areRightsConserved(reallocation),
     )`Rights are not conserved in the proposed reallocation`;

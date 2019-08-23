@@ -15,6 +15,7 @@ const mapArrayOnMatrix = (matrix, arrayF) => {
 
 // used to reduce boolean arrays
 const allTrue = (prev, curr) => prev && curr;
+const oneTrue = (prev, curr) => prev || curr;
 
 // https://stackoverflow.com/questions/17428587/transposing-a-2d-array-in-javascript/41772644#41772644
 const transpose = matrix =>
@@ -23,4 +24,4 @@ const transpose = matrix =>
     [],
   );
 
-export { mapMatrix, allTrue, transpose, mapArrayOnMatrix };
+export { mapMatrix, allTrue, oneTrue, transpose, mapArrayOnMatrix };
