@@ -23,4 +23,4 @@ const natStrategy = harden({
   multiply: (left, right) => Nat(left * right),
 });
 
-export default natStrategy;
+export { natStrategy };
