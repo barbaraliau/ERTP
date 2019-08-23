@@ -1,42 +1,29 @@
 import harden from '@agoric/harden';
 
-import {
-  hasOkIssuers,
-  isAddingLiquidity,
-  hasOkContentForAddingLiquidity,
-  isSwapping,
-  hasOkContentForSwapping,
-  isValidSwap,
-} from './isValidOffer';
-
-import { oneTrue } from '../../utils';
-
-const reallocate = (quantities, offers) => 
+import isValidOffer from './isValidOffer';
+import isAddingLiquidity from './isAddingLiquidity';
+import { reallocate } from './reallocate';
 
 const autoswapSrcs = harden({
-  areIssuersValid: issuers => issuers.length === 3,
-  isValidOffer: (issuers, _offersSoFar, newOffer, data) => {
-    // are we adding liquidity or doing a swap? Note that an aim of
-    // Zoe is only have a few methods, so that is why we are using
-    // this same method for two uses. It's a tradeoff.
-    if (isAddingLiquidity(newOffer)) {
-      return (
-        hasOkIssuers(issuers, newOffer) &&
-        hasOkContentForAddingLiquidity(newOffer)
-      );
-    }
-    if (isSwapping(newOffer)) {
-      return (
-        hasOkIssuers(issuers, newOffer) &&
-        hasOkContentForSwapping(newOffer) &&
-        isValidSwap(data, newOffer)
-      );
-    }
-    return false;
+  areIssuersValid: issuers => issuers.length === 2,
+  isValidOffer: (issuers, _offersSoFar, newOffer, quantities) => {
+    return (
+      isValidOffer.okLength(newOffer) &&
+      isValidOffer.okIssuers(issuers, newOffer) &&
+      isValidOffer.okContent(newOffer) &&
+      isValidOffer.okSwap(quantities, newOffer)
+    );
+  },
+  isValidAddingLiquidity: (issuers, _offersSoFar, newOffer, _data) => {
+    return (
+      isValidOffer.okLength(newOffer) &&
+      isValidOffer.okIssuers(issuers, newOffer) &&
+      isAddingLiquidity.okContent(newOffer)
+    );
   },
   // we can reallocate once we have a single swapping offer
-  canReallocate: offers => offers.map(isSwapping).reduce(oneTrue),
-  reallocate: quantities => harden(),
+  canReallocate: offers => offers.length === 2,
+  reallocate,
   cancel: quantities => harden(quantities),
 });
 

@@ -102,7 +102,7 @@ const makeInstitution = srcs => {
       await Promise.all(escrow(rules, payments));
 
       // fail-fast if the offer isn't valid
-      if (!srcs.isValidOffer(issuers, offers, rules, contractData)) {
+      if (!srcs.isValidOffer(issuers, offers, rules, quantities)) {
         return result.reject('offer was invalid');
       }
 

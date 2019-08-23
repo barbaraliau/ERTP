@@ -4,7 +4,7 @@ const { add, subtract, mult, divide } = operations;
 
 // calculate the fee, quantity out, new pool quantities
 // Q stands for Quantity
-const calculate = (tokenInPoolQ, tokenOutPoolQ, tokenInQ) => {
+const calcSwap = (tokenInPoolQ, tokenOutPoolQ, tokenInQ) => {
   const feeDivisor = 500;
   const feeTokenInQ = divide(tokenInQ, feeDivisor);
   const invariant = mult(tokenInPoolQ, tokenOutPoolQ);
@@ -14,12 +14,14 @@ const calculate = (tokenInPoolQ, tokenOutPoolQ, tokenInQ) => {
     subtract(newTokenInPoolQ, feeTokenInQ),
   );
   const tokenOutQ = subtract(tokenOutPoolQ, newTokenOutPoolQ);
+
+  // We add the fee to the pool quantity, but could do something
+  // different.
   return {
-    feeTokenInQ,
     tokenOutQ,
-    newTokenInPoolQ,
+    newTokenInPoolQ: add(newTokenInPoolQ, feeTokenInQ),
     newTokenOutPoolQ,
   };
 };
 
-export { calculate };
+export { calcSwap };
