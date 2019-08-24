@@ -1,8 +1,8 @@
-import { mapMatrix } from './utils';
+import { mapArrayOnMatrix } from './utils';
 
 function toAmountMatrix(assays, quantitiesMatrix) {
   const assayMakes = assays.map(assay => assay.make);
-  return mapMatrix(quantitiesMatrix, assayMakes);
+  return mapArrayOnMatrix(quantitiesMatrix, assayMakes);
 }
 
 export { toAmountMatrix };

@@ -7,8 +7,11 @@ const hasOkContent = offer =>
 const hasOkIssuers = (issuers, offer) =>
   offer[0].amount.label.issuer === issuers[0] &&
   offer[1].amount.label.issuer === issuers[1];
-const isMatch = (priorOffer, newOffer) =>
-  priorOffer[0] === newOffer[1] && priorOffer[1] === newOffer[0];
+const isMatch = (assays, priorOffer, newOffer) =>
+  priorOffer[0].rule === newOffer[1].rule &&
+  priorOffer[1].rule === newOffer[0].rule &&
+  assays[0].equals(priorOffer[0].amount, newOffer[0].amount) &&
+  assays[1].equals(priorOffer[1].amount, newOffer[1].amount);
 
 const swapSrcs = harden({
   startState: 'empty',
@@ -21,18 +24,18 @@ const swapSrcs = harden({
     ['closed', []],
   ],
   areIssuersValid: issuers => issuers.length === 2,
-  isValidOffer: (issuers, offersSoFar, newOffer, _data) => {
+  isValidOffer: (issuers, assays, offersSoFar, newOffer, _quantities) => {
     const hasOkFormat =
       hasOkLength(newOffer) &&
       hasOkContent(newOffer) &&
       hasOkIssuers(issuers, newOffer);
     if (offersSoFar.length >= 1) {
-      return hasOkFormat && isMatch(offersSoFar[0], newOffer);
+      return hasOkFormat && isMatch(assays, offersSoFar[0], newOffer);
     }
     return hasOkFormat;
   },
   canReallocate: offers => {
-    return offers.length === 2 && isMatch(offers[0], offers[1]);
+    return offers.length === 2;
   },
   reallocate: allocations => harden([allocations[1], allocations[0]]),
   cancel: allocations => harden(allocations),

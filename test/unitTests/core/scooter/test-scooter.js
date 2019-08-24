@@ -48,7 +48,7 @@ test('makeInstitution with trivial srcs', t => {
   }
 });
 
-test.skip('makeInstitution with swap srcs', t => {
+test.only('makeInstitution with swap srcs', async t => {
   try {
     const { issuers, mints } = setup();
 
@@ -56,7 +56,7 @@ test.skip('makeInstitution with swap srcs', t => {
     t.equals(swap.getIssuers(), undefined);
     swap.init(issuers);
     t.deepEquals(swap.getIssuers(), issuers);
-    const myOffer = [
+    const player1Offer = [
       {
         rule: 'haveExactly',
         amount: issuers[0].makeAmount(3),
@@ -66,14 +66,57 @@ test.skip('makeInstitution with swap srcs', t => {
         amount: issuers[1].makeAmount(7),
       },
     ];
-    const moolaPurse = mints[0].mint(issuers[0].makeAmount(3));
-    const moolaPayment = moolaPurse.withdrawAll();
-    const simoleanPurse = mints[1].mint(issuers[1].makeAmount(0));
-    const simoleanPayment = simoleanPurse.withdrawAll();
-    const myPayments = [moolaPayment, simoleanPayment];
-    const results = swap.makeOffer(myOffer, myPayments);
+    const player1MoolaPurse = mints[0].mint(issuers[0].makeAmount(3));
+    const player1MoolaPayment = player1MoolaPurse.withdrawAll();
+    const player1SimoleanPurse = mints[1].mint(issuers[1].makeAmount(0));
+    const player1SimoleanPayment = player1SimoleanPurse.withdrawAll();
+    const player1Payments = [player1MoolaPayment, player1SimoleanPayment];
+    const player1ResultsP = swap.makeOffer(player1Offer, player1Payments);
+
+    const player2Offer = [
+      {
+        rule: 'wantExactly',
+        amount: issuers[0].makeAmount(3),
+      },
+      {
+        rule: 'haveExactly',
+        amount: issuers[1].makeAmount(7),
+      },
+    ];
+    const player2MoolaPurse = mints[0].mint(issuers[0].makeAmount(0));
+    const player2MoolaPayment = player2MoolaPurse.withdrawAll();
+    const player2SimoleanPurse = mints[1].mint(issuers[1].makeAmount(7));
+    const player2SimoleanPayment = player2SimoleanPurse.withdrawAll();
+    const player2Payments = [player2MoolaPayment, player2SimoleanPayment];
+    const player2ResultsP = swap.makeOffer(player2Offer, player2Payments);
+
+    const [player1Results, player2Results] = await Promise.all([
+      player1ResultsP,
+      player2ResultsP,
+    ]);
+
+    t.equals(player1Results[0].getBalance().quantity, 0);
+    t.deepEquals(player1Results[1].getBalance(), player1Offer[1].amount);
+
+    await player1MoolaPurse.depositAll(player1Results[0]);
+    await player1SimoleanPurse.depositAll(player1Results[1]);
+
+    await player2MoolaPurse.depositAll(player2Results[0]);
+    await player2SimoleanPurse.depositAll(player2Results[1]);
+
+    // player1 had 3 moola and 0 simoleans.
+    // player 2 had 0 moola and 7 simoleans.
+
+    // Now, player1 should have 0 moola and 7 simoleans.
+    // player 2 should have 3 moola and 0 simoleans.
+
+    t.equals(player1MoolaPurse.getBalance().quantity, 0);
+    t.equals(player1SimoleanPurse.getBalance().quantity, 7);
+    t.equals(player2MoolaPurse.getBalance().quantity, 3);
+    t.equals(player2SimoleanPurse.getBalance().quantity, 0);
   } catch (e) {
     t.assert(false, e);
+    console.log(e);
   } finally {
     t.end();
   }

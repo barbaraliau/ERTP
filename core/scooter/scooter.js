@@ -15,41 +15,42 @@ const makeInstitution = srcs => {
   let issuers; // array
   let assays; // array
   let strategies; // array
-  let results; // promises that need to be resolved to payments per player
+  const results = []; // promises that need to be resolved to payments per player
 
-  let offers; // matrix: rules per player
-  let quantities; // matrix: quantities per player
+  const offers = []; // matrix: rules per player
+  const quantities = []; // matrix: quantities per player
 
   // hold closely - do not give to mechanism
   let purses; // array
   let purseQuantities; // array
 
   function makePayments(amountsMatrix) {
-    const makePayment = (purseIndex, amount) =>
-      purses[purseIndex].withdraw(amount, 'payout');
-    return mapArrayOnMatrix(amountsMatrix, makePayment);
+    return amountsMatrix.map(row =>
+      row.map((amount, i) => purses[i].withdraw(amount, 'payout')),
+    );
   }
 
   // Escrow does the escrowing, but also updates the `purseQuantities`
   // (the current balance of the purses) and `quantities` (the amount
   // escrowed per player per issuer)
-  function escrow(rules, payments) {
-    // has side-effects
-    const quantitiesForPlayerPromises = purses.map((purse, i) => {
+  async function escrow(rules, payments) {
+    const quantitiesForPlayerPromises = purses.map(async (purse, i) => {
       // if the user's contractual understanding includes
       // "haveExactly", make sure that they have supplied the
       // coordinating payment
       if (rules[i].rule === 'haveExactly') {
-        const amount = purse.depositExactly(rules[i].rule, payments[i]);
-        purseQuantities[i] = strategies[i].with(
-          purseQuantities[i],
-          amount.quantity,
-        );
+        const amount = await purse.depositExactly(rules[i].amount, payments[i]);
         return amount.quantity;
       }
       return strategies[i].empty();
     });
-    const quantitiesForPlayer = quantitiesForPlayerPromises;
+
+    const quantitiesForPlayer = await Promise.all(quantitiesForPlayerPromises);
+    // has side-effects
+    // eslint-disable-next-line array-callback-return
+    quantitiesForPlayer.map((quantity, i) => {
+      purseQuantities[i] = strategies[i].with(purseQuantities[i], quantity);
+    });
     quantities.push(quantitiesForPlayer);
   }
 
@@ -65,10 +66,10 @@ const makeInstitution = srcs => {
   function allocate() {
     const reallocation = srcs.reallocate(quantities, offers);
     insist(
-      areRightsConserved(reallocation),
+      areRightsConserved(strategies, purseQuantities, reallocation),
     )`Rights are not conserved in the proposed reallocation`;
 
-    const amounts = toAmountMatrix(quantities);
+    const amounts = toAmountMatrix(assays, reallocation);
     insist(
       isOfferSafeForAll(assays, offers, amounts),
     )`The proposed reallocation was not offer safe`;
@@ -91,10 +92,10 @@ const makeInstitution = srcs => {
       // Right now we just keep it.
       const result = makePromise();
 
-      await Promise.all(escrow(rules, payments));
+      await escrow(rules, payments);
 
       // fail-fast if the offer isn't valid
-      if (!srcs.isValidOffer(issuers, offers, rules, quantities)) {
+      if (!srcs.isValidOffer(issuers, assays, offers, rules, quantities)) {
         return result.reject('offer was invalid');
       }
 

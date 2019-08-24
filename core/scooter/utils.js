@@ -10,7 +10,7 @@ const mapMatrix = (matrix, f) => {
  * @param  {function} arrayF - the array of functions to apply
  */
 const mapArrayOnMatrix = (matrix, arrayF) => {
-  return matrix.map(row => row.map((x, i) => arrayF[i](x)));
+  return matrix.map(row => row.map((x, i) => arrayF[i](x, i)));
 };
 
 // used to reduce boolean arrays
