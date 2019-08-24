@@ -1,4 +1,5 @@
 import { allTrue, transpose } from './utils';
+import { insist } from '../../util/insist';
 
 /**
  * @param  {array} assaysPerIssuer - an array of assays ordered in the
@@ -23,6 +24,11 @@ function isOfferSafeForPlayer(
   rulesPerIssuer,
   amountsPerIssuer,
 ) {
+  insist(
+    assaysPerIssuer.length === rulesPerIssuer.length &&
+      assaysPerIssuer.length === amountsPerIssuer.length,
+  )`assays, rules, and amounts must be arrays of the same length`;
+
   // Is the amount greater than or equal to the amount in the offer?
   const isAmountOfferSafe = (assay, amount, rule) => {
     return assay.includes(amount, rule.amount);
@@ -40,7 +46,7 @@ function isOfferSafeForPlayer(
       }
       return true;
     })
-    .reduce(allTrue);
+    .reduce(allTrue, true);
 
   // If we are not refunding the player, are their allocated amounts
   // greater than or equal to what they said they wanted at the beginning?
@@ -54,7 +60,7 @@ function isOfferSafeForPlayer(
       }
       return true;
     })
-    .reduce(allTrue);
+    .reduce(allTrue, true);
 
   return refundOk || winningsOk;
 }

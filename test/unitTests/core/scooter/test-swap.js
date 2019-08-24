@@ -1,8 +1,8 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { swapSrcs } from '../../../core/scooter/contracts/swap';
-import { makeMint } from '../../../core/issuers';
+import { swapSrcs } from '../../../../core/scooter/contracts/swap';
+import { makeMint } from '../../../../core/issuers';
 
 test('swap.areIssuersValid', t => {
   try {

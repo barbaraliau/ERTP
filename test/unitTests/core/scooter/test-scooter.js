@@ -1,13 +1,13 @@
 import { test } from 'tape-promise/tape';
 
-import { makeStateMachine } from '../../../core/scooter/stateMachine';
+import { makeStateMachine } from '../../../../core/scooter/stateMachine';
 
 import {
   allTrue,
   mapMatrix,
   transpose,
   mapArrayOnMatrix,
-} from '../../../core/scooter/utils';
+} from '../../../../core/scooter/utils';
 
 test('stateMachine', t => {
   try {
@@ -67,7 +67,7 @@ test('transpose', t => {
   }
 });
 
-test.only('mapArrayOnMatrix', t => {
+test('mapArrayOnMatrix', t => {
   try {
     const add1 = x => x + 1;
     const add2 = x => x + 2;
