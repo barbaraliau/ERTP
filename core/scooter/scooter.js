@@ -1,7 +1,8 @@
-/* global E makePromise */
 import harden from '@agoric/harden';
 
 import { insist } from '../../util/insist';
+import makePromise from '../../util/makePromise';
+
 import { makeStateMachine } from './stateMachine';
 import { isOfferSafeForAll, areRightsConserved } from './isOfferSafe';
 import { mapArrayOnMatrix } from './utils';
@@ -23,8 +24,6 @@ const makeInstitution = srcs => {
   let purses; // array
   let purseQuantities; // array
 
-  let contractData; // an object that is defined by the contract
-
   function makePayments(amountsMatrix) {
     const makePayment = (purseIndex, amount) =>
       purses[purseIndex].withdraw(amount, 'payout');
@@ -35,39 +34,32 @@ const makeInstitution = srcs => {
   // (the current balance of the purses) and `quantities` (the amount
   // escrowed per player per issuer)
   function escrow(rules, payments) {
-    const quantitiesForPlayer = [];
     // has side-effects
-    // eslint-disable-next-line array-callback-return
-    purses.map(async (purse, i) => {
+    const quantitiesForPlayerPromises = purses.map((purse, i) => {
       // if the user's contractual understanding includes
       // "haveExactly", make sure that they have supplied the
       // coordinating payment
       if (rules[i].rule === 'haveExactly') {
-        const amount = await purse.depositExactly(
-          rules[i].haveExactly,
-          payments[i],
-        );
+        const amount = purse.depositExactly(rules[i].rule, payments[i]);
         purseQuantities[i] = strategies[i].with(
           purseQuantities[i],
           amount.quantity,
         );
-        quantitiesForPlayer.push[amount.quantity];
-      } else {
-        quantitiesForPlayer.push[strategies[i].empty()];
+        return amount.quantity;
       }
+      return strategies[i].empty();
     });
+    const quantitiesForPlayer = quantitiesForPlayerPromises;
     quantities.push(quantitiesForPlayer);
   }
 
   function initializeRecordkeeping(submittedIssuers) {
     issuers = submittedIssuers;
     // we have a lot of round trips here. TODO: fewer round trips
-    assays = issuers.map(issuer => E(issuer).getAssay());
-    strategies = issuers.map(issuer => E(issuer).getStrategy());
-    purses = issuers.map(issuer => E(issuer).makeEmptyPurse());
+    assays = issuers.map(issuer => issuer.getAssay());
+    strategies = issuers.map(issuer => issuer.getStrategy());
+    purses = issuers.map(issuer => issuer.makeEmptyPurse());
     purseQuantities = strategies.map(strategy => strategy.empty());
-    quantities = srcs.initQuantities();
-    offers = srcs.initOffers();
   }
 
   function allocate() {
@@ -93,7 +85,7 @@ const makeInstitution = srcs => {
       sm.transitionTo('open');
       return institution;
     },
-    getIssuers: _ => harden(issuers),
+    getIssuers: _ => (issuers && issuers.slice()) || undefined,
     async makeOffer(rules, payments) {
       // TODO: handle bad/incorrect behavior by sending back payment.
       // Right now we just keep it.
@@ -120,3 +112,5 @@ const makeInstitution = srcs => {
   });
   return institution;
 };
+
+export { makeInstitution };

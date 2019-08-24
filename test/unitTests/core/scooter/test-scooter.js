@@ -1,82 +1,77 @@
 import { test } from 'tape-promise/tape';
+import harden from '@agoric/harden';
 
-import { makeStateMachine } from '../../../../core/scooter/stateMachine';
+import { makeInstitution } from '../../../../core/scooter/scooter';
+import { swapSrcs } from '../../../../core/scooter/contracts/swap';
+import { makeMint } from '../../../../core/issuers';
 
-import {
-  allTrue,
-  mapMatrix,
-  transpose,
-  mapArrayOnMatrix,
-} from '../../../../core/scooter/utils';
+const setup = () => {
+  const moolaMint = makeMint('moola');
+  const simoleanMint = makeMint('simoleans');
 
-test('stateMachine', t => {
+  const moolaIssuer = moolaMint.getIssuer();
+  const simoleanIssuer = simoleanMint.getIssuer();
+
+  const moolaAssay = moolaIssuer.getAssay();
+  const simoleanAssay = simoleanIssuer.getAssay();
+
+  return harden({
+    mints: [moolaMint, simoleanMint],
+    issuers: [moolaIssuer, simoleanIssuer],
+    assays: [moolaAssay, simoleanAssay],
+  });
+};
+
+test('makeInstitution with trivial srcs', t => {
   try {
-    const startState = 'empty';
-    const allowedTransitions = [
-      ['empty', ['open']],
-      ['open', ['rellocating', 'cancelled']],
-      ['reallocating', ['dispersing']],
-      ['dispersing', ['closed']],
-      ['cancelled', []],
-      ['closed', []],
+    const srcs = {
+      startState: 'empty',
+      allowedTransitions: [
+        ['empty', ['open']],
+        ['open', ['reallocating', 'cancelled']],
+        ['reallocating', ['dispersing']],
+        ['dispersing', ['closed']],
+        ['cancelled', []],
+        ['closed', []],
+      ],
+      areIssuersValid: _issuers => true,
+      isValidOffer: (_issuers, _offersSoFar, _newOffer, _data) => true,
+      canReallocate: _offers => true,
+      reallocate: allocations => allocations,
+      cancel: allocations => allocations,
+    };
+    t.ok(makeInstitution(srcs));
+  } catch (e) {
+    t.assert(false, e);
+  } finally {
+    t.end();
+  }
+});
+
+test.skip('makeInstitution with swap srcs', t => {
+  try {
+    const { issuers, mints } = setup();
+
+    const swap = makeInstitution(swapSrcs);
+    t.equals(swap.getIssuers(), undefined);
+    swap.init(issuers);
+    t.deepEquals(swap.getIssuers(), issuers);
+    const myOffer = [
+      {
+        rule: 'haveExactly',
+        amount: issuers[0].makeAmount(3),
+      },
+      {
+        rule: 'wantExactly',
+        amount: issuers[1].makeAmount(7),
+      },
     ];
-    const stateMachine = makeStateMachine(startState, allowedTransitions);
-    t.equal(stateMachine.getState(), 'empty');
-    t.ok(stateMachine.canTransitionTo('open'));
-    t.notOk(stateMachine.canTransitionTo('closed'));
-    stateMachine.transitionTo('open');
-    t.equal(stateMachine.getState(), 'open');
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
-});
-
-test('allTrue', t => {
-  try {
-    t.ok([1, 2].reduce(allTrue));
-    t.notOk([false, 2].reduce(allTrue));
-    t.notOk([false, false].reduce(allTrue));
-    t.ok([true, true].reduce(allTrue));
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
-});
-
-test('mapMatrix', t => {
-  try {
-    const times2 = x => x * 2;
-    t.deepEquals(mapMatrix([[1, 2], [3, 4]], times2), [[2, 4], [6, 8]]);
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
-});
-
-test('transpose', t => {
-  try {
-    t.deepEquals(transpose([[1, 2, 3], [4, 5, 6]]), [[1, 4], [2, 5], [3, 6]]);
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
-});
-
-test('mapArrayOnMatrix', t => {
-  try {
-    const add1 = x => x + 1;
-    const add2 = x => x + 2;
-    const times2 = x => x * 2;
-    const functions = [add1, add2, times2];
-    t.deepEquals(mapArrayOnMatrix([[1, 2, 3], [4, 5, 6]], functions), [
-      [2, 4, 6],
-      [5, 7, 12],
-    ]);
+    const moolaPurse = mints[0].mint(issuers[0].makeAmount(3));
+    const moolaPayment = moolaPurse.withdrawAll();
+    const simoleanPurse = mints[1].mint(issuers[1].makeAmount(0));
+    const simoleanPayment = simoleanPurse.withdrawAll();
+    const myPayments = [moolaPayment, simoleanPayment];
+    const results = swap.makeOffer(myOffer, myPayments);
   } catch (e) {
     t.assert(false, e);
   } finally {

@@ -176,7 +176,6 @@ runIsValidOfferTests([]);
 //   { rule: 'wantExactly', amount: simoleanIssuer.makeAmount(7) },
 // ]);
 
-
 // test('swap.isValidOffer - one offer so far additional tests', t => {
 //   const { isValidOffer } = swapSrcs;
 //   const { issuers, data } = setupIsValidOfferTest();
