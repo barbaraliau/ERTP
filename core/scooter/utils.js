@@ -15,7 +15,7 @@ const mapArrayOnMatrix = (matrix, arrayF) => {
 
 // used to reduce boolean arrays
 const allTrue = (prev, curr) => prev && curr;
-const oneTrue = (prev, curr) => prev || curr;
+const anyTrue = (prev, curr) => prev || curr;
 
 // https://stackoverflow.com/questions/17428587/transposing-a-2d-array-in-javascript/41772644#41772644
 const transpose = matrix =>
@@ -24,4 +24,37 @@ const transpose = matrix =>
     [],
   );
 
-export { mapMatrix, allTrue, oneTrue, transpose, mapArrayOnMatrix };
+const makeHasOkLength = length => arr => arr.length === length;
+
+// validRules is an array of arrays where each row is the rules of a valid offer:
+// e.g. validRules = [['haveExactly', 'wantExactly'],
+// ['wantExactly', 'haveExactly']]
+const makeHasOkRules = validRules => offer =>
+  validRules.map((rules, i) => rules[i] === offer[i].rule).reduce(anyTrue);
+
+const hasOkIssuers = (issuers, offer) =>
+  issuers.map((issuer, i) => offer[i].amount.label.issuer === issuer);
+
+const ruleEqual = (leftRule, rightRule) => leftRule.rule === rightRule.rule;
+
+const amountEqual = (assay, leftRule, rightRule) =>
+  assay.equals(leftRule.amount, rightRule.amount);
+
+const allAmountsEqual = (assays, leftRules, rightRules) =>
+  assays
+    .map((assay, i) => assay.equals(leftRules[i].amount, rightRules[i].amount))
+    .reduce(allTrue);
+
+export {
+  mapMatrix,
+  allTrue,
+  anyTrue,
+  transpose,
+  mapArrayOnMatrix,
+  makeHasOkLength,
+  makeHasOkRules,
+  hasOkIssuers,
+  ruleEqual,
+  amountEqual,
+  allAmountsEqual,
+};

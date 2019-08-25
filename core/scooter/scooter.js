@@ -6,7 +6,11 @@ import makePromise from '../../util/makePromise';
 import { makeStateMachine } from './stateMachine';
 import { isOfferSafeForAll, areRightsConserved } from './isOfferSafe';
 import { mapArrayOnMatrix } from './utils';
-import { toAmountMatrix } from './hoists';
+
+function toAmountMatrix(assays, quantitiesMatrix) {
+  const assayMakes = assays.map(assay => assay.make);
+  return mapArrayOnMatrix(quantitiesMatrix, assayMakes);
+}
 
 const makeInstitution = srcs => {
   const sm = makeStateMachine(srcs.startState, srcs.allowedTransitions);
@@ -88,16 +92,20 @@ const makeInstitution = srcs => {
     },
     getIssuers: _ => (issuers && issuers.slice()) || undefined,
     async makeOffer(rules, payments) {
-      // TODO: handle bad/incorrect behavior by sending back payment.
-      // Right now we just keep it.
       const result = makePromise();
-
-      await escrow(rules, payments);
 
       // fail-fast if the offer isn't valid
       if (!srcs.isValidOffer(issuers, assays, offers, rules, quantities)) {
-        return result.reject('offer was invalid');
+        return harden({
+          claim: () => result.reject('offer was invalid'),
+          refund: () => payments,
+        });
       }
+
+      // TODO: handle good offers but some bad payments. We may have
+      // already deposited some good payments by the time the bad
+      // payments occur.
+      await escrow(rules, payments);
 
       // keep the valid offer
       offers.push(rules);
@@ -107,7 +115,10 @@ const makeInstitution = srcs => {
       if (srcs.canReallocate(offers)) {
         allocate();
       }
-      return result.p;
+      return harden({
+        claim: () => result.p,
+        refund: () => [],
+      });
     },
     claim: _ => {},
   });

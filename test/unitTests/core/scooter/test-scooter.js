@@ -71,7 +71,7 @@ test.only('makeInstitution with swap srcs', async t => {
     const player1SimoleanPurse = mints[1].mint(issuers[1].makeAmount(0));
     const player1SimoleanPayment = player1SimoleanPurse.withdrawAll();
     const player1Payments = [player1MoolaPayment, player1SimoleanPayment];
-    const player1ResultsP = swap.makeOffer(player1Offer, player1Payments);
+    const player1Position = await swap.makeOffer(player1Offer, player1Payments);
 
     const player2Offer = [
       {
@@ -88,11 +88,11 @@ test.only('makeInstitution with swap srcs', async t => {
     const player2SimoleanPurse = mints[1].mint(issuers[1].makeAmount(7));
     const player2SimoleanPayment = player2SimoleanPurse.withdrawAll();
     const player2Payments = [player2MoolaPayment, player2SimoleanPayment];
-    const player2ResultsP = swap.makeOffer(player2Offer, player2Payments);
+    const player2Position = await swap.makeOffer(player2Offer, player2Payments);
 
     const [player1Results, player2Results] = await Promise.all([
-      player1ResultsP,
-      player2ResultsP,
+      player1Position.claim(),
+      player2Position.claim(),
     ]);
 
     t.equals(player1Results[0].getBalance().quantity, 0);
