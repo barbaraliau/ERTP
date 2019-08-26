@@ -42,7 +42,11 @@ anything):
   [quantity3, quantity4],
 ]
 
-`quantity1` and 
+`quantity1` and `quantity2` are the quantities for player1. `quantity3`
+and `quantity4` are the quantities for player2. The quantities in the
+first column (`quantity1`, `quantity3`) are for issuer1, and
+quantities in the second column (`quantity2`, `quantity4`) are
+for issuer2. 
 
 For examples, see [swap](../contracts/swap.js) and
 [autoswap](../contracts/autoswap/autoswap.js) (the Uniswap implemenation)
