@@ -33,5 +33,16 @@ A governing contract is an object with the methods:
    reallocate, and returns a matrix in the same format. 
 
 
-For examples, see [swap](core/scooter/contracts/swap.js) and
-[autoswap](core/scooter/contracts/autoswap/autoswap.js) (the Uniswap implemenation)
+The quantities matrix that is passed in to reallocate and cancel looks
+like this (the number of players and issuers are variable and could be
+anything):
+
+[
+  [quantity1, quantity2], // one row per player
+  [quantity3, quantity4],
+]
+
+`quantity1` and 
+
+For examples, see [swap](../contracts/swap.js) and
+[autoswap](../contracts/autoswap/autoswap.js) (the Uniswap implemenation)
