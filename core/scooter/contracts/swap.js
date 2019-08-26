@@ -42,7 +42,7 @@ const swapSrcs = harden({
     }
     return hasOkFormat;
   },
-  canReallocate: hasOkLength,
+  canReallocate: offers => offers.length === 2, // we can reallocate with 2 valid offers
   reallocate: allocations => harden([allocations[1], allocations[0]]),
   cancel: allocations => harden(allocations),
 });
