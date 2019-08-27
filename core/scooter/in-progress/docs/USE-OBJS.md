@@ -28,22 +28,20 @@ to claim exactly with an amount with a quantity that has:
 2. The unique id for the particular instantiation (per src or overall)?
 3. the offer that was made
 
-invite: (can hold multiple rights)
+invite: (can hold multiple invites by adding to the array)
 ```js
-quantity = {
+quantity = [{
   src: 'swap',
   id: 1,
-  offersToBeMade: [[rule1, rule2]],
-}
+  offerToBeMade: [rule1, rule2],
+}]
 ```
 
-claim: (can hold multiple rights)
+claim: (can hold multiple claims by adding to the array)
 ```js
-quantity = {
+quantity = [{
   src: 'swap',
   id: 1,
-  offersMade: [[rule1, rule2]],
-}
+  offersMade: [rule1, rule2],
+}]
 ```
-
-
