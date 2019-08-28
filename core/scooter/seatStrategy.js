@@ -1,4 +1,9 @@
 import harden from '@agoric/harden';
+import Nat from '@agoric/nat';
+import { passStyleOf } from '@agoric/marshal';
+
+import { insist } from '../../util/insist';
+import { makeListStrategy } from '../config/strategies/listStrategy';
 
 // quantity = [{
 //   src: 'swap',
@@ -9,31 +14,48 @@ import harden from '@agoric/harden';
 // quantity = [{
 //   src: 'swap',
 //   id: 1,
-//   offersMade: [rule1, rule2],
+//   offerMade: [rule1, rule2],
 // }]
 
-function insistSeatList(seatList, canvasSize) {
-  insist(passStyleOf(pixelList) === 'copyArray')`pixelList must be an array`;
-  for (let i = 0; i < pixelList.length; i += 1) {
-    insistPixel(pixelList[i], canvasSize);
+const isContractName = str => {
+  insist(typeof str === 'string');
+  // TODO: lookup name in the contract import map
+};
+
+// TODO: more robust checks
+const insistSeat = seat => {
+  const properties = Object.getOwnPropertyNames(seat);
+  insist(
+    properties.length === 3,
+  )`must have the properties 'src', 'id', and 'offerToBeMade' or 'offerMade'`;
+  insist(isContractName(seat.src));
+  Nat(seat.id);
+  insist(
+    passStyleOf(seat.offerToBeMade) === 'copyArray' ||
+      passStyleOf(seat.offerMade) === 'copyArray',
+  );
+};
+
+const isEqual = (left, right) => left.id === right.id;
+
+const compare = (a, b) => {
+  if (!a || !b) {
+    return undefined;
   }
-}
 
-const seatStrategy = harden({
-  insistKind: pixelList => {
-    insistPixelList(pixelList, canvasSize);
-    return harden(pixelList);
-  },
-  empty: _ => harden([]),
-  isEmpty: list => list.length === 0,
-  includes: (whole, part) => includesPixelList(whole, part),
-  equals: (left, right) =>
-    pixelStrategy.includes(left, right) &&
-    pixelStrategy.includes(right, left),
-  with: (left, right) => harden(withPixelList(left, right)),
-  without: (whole, part) => harden(withoutPixelList(whole, part)),
-});
+  if (a.id === b.id) {
+    return 0;
+  }
 
+  if (a.id < b.id) {
+    return -1;
+  }
+
+  // must be greater
+  return 1;
+};
+
+const seatStrategy = makeListStrategy(insistSeat, isEqual, compare);
 
 harden(seatStrategy);
 

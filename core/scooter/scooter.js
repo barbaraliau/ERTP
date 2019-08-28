@@ -6,6 +6,7 @@ import makePromise from '../../util/makePromise';
 import { makeStateMachine } from './stateMachine';
 import { isOfferSafeForAll, areRightsConserved } from './isOfferSafe';
 import { mapArrayOnMatrix } from './utils';
+import { makeSeatConfigMaker } from './seatStrategy';
 
 function toAmountMatrix(assays, quantitiesMatrix) {
   const assayMakes = assays.map(assay => assay.make);
@@ -81,6 +82,19 @@ const makeInstitution = srcs => {
     const payments = makePayments(amounts);
     results.map((result, i) => result.res(payments[i]));
   }
+
+  function insistAssetHasAmount(issuer, asset, amount) {
+    insist(issuer.getAssay().includes(asset.getBalance(), amount))`\
+      ERTP asset ${asset} does not include amount ${amount}`;
+  }
+
+  const makeUseObj = (issuer, asset) => {
+    const allegedAmount = asset.getBalance();
+    insistAssetHasAmount(issuer, asset, allegedAmount);
+    return useObj;
+  };
+
+  const makeSeatConfig = makeSeatConfigMaker(makeUseObj);
 
   const institution = harden({
     init(submittedIssuers) {
