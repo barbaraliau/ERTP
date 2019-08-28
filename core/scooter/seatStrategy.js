@@ -36,6 +36,8 @@ const insistSeat = seat => {
   );
 };
 
+const extractIds = seats => seats.map(seat => seat.id);
+
 const isEqual = (left, right) => left.id === right.id;
 
 const compare = (a, b) => {
@@ -59,4 +61,11 @@ const seatStrategy = makeListStrategy(insistSeat, isEqual, compare);
 
 harden(seatStrategy);
 
-export { seatStrategy };
+export {
+  seatStrategy,
+  extractIds,
+  compare,
+  isEqual,
+  insistSeat,
+  isContractName,
+};

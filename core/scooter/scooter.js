@@ -6,7 +6,9 @@ import makePromise from '../../util/makePromise';
 import { makeStateMachine } from './stateMachine';
 import { isOfferSafeForAll, areRightsConserved } from './isOfferSafe';
 import { mapArrayOnMatrix } from './utils';
-import { makeSeatConfigMaker } from './seatStrategy';
+import { extractIds } from './seatStrategy';
+import { makeSeatConfigMaker } from './seatConfig';
+import { makeMint } from '../issuers';
 
 function toAmountMatrix(assays, quantitiesMatrix) {
   const assayMakes = assays.map(assay => assay.make);
@@ -88,13 +90,23 @@ const makeInstitution = srcs => {
       ERTP asset ${asset} does not include amount ${amount}`;
   }
 
+  const idsToSeats = new Map();
+  let nextSeatId = 0;
+
   const makeUseObj = (issuer, asset) => {
     const allegedAmount = asset.getBalance();
     insistAssetHasAmount(issuer, asset, allegedAmount);
-    return useObj;
+    const ids = extractIds(allegedAmount.quantity);
+    const seats = ids.map(id => idsToSeats.get(id));
+    return seats;
   };
 
   const makeSeatConfig = makeSeatConfigMaker(makeUseObj);
+
+  const seatMint = makeMint('scooterSeats', makeSeatConfig);
+
+  // TODO: use the code library and make this meaningful
+  const srcsName = 'swap';
 
   const institution = harden({
     init(submittedIssuers) {
@@ -110,10 +122,21 @@ const makeInstitution = srcs => {
 
       // fail-fast if the offer isn't valid
       if (!srcs.isValidOffer(issuers, assays, offers, rules, quantities)) {
-        return harden({
+        const quantity = harden([
+          {
+            src: srcsName,
+            id: nextSeatId,
+            offerMade: rules,
+          },
+        ]);
+        const payment = seatMint.mint(quantity);
+        const seat = harden({
           claim: () => result.reject('offer was invalid'),
           refund: () => payments,
         });
+        idsToSeats.set(nextSeatId, seat);
+        nextSeatId += 1;
+        return payment;
       }
 
       // TODO: handle good offers but some bad payments. We may have
@@ -129,10 +152,21 @@ const makeInstitution = srcs => {
       if (srcs.canReallocate(offers)) {
         allocate();
       }
-      return harden({
+      const quantity = harden([
+        {
+          src: srcsName,
+          id: nextSeatId,
+          offerMade: rules,
+        },
+      ]);
+      const payment = seatMint.mint(quantity);
+      const seat = harden({
         claim: () => result.p,
         refund: () => [],
       });
+      idsToSeats.set(nextSeatId, seat);
+      nextSeatId += 1;
+      return payment;
     },
     claim: _ => {},
   });
