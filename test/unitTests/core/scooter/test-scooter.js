@@ -55,7 +55,7 @@ test.only('makeInstitution with swap srcs', async t => {
     const { issuers, mints, scooter } = setup();
 
     const swap = scooter.install(swapSrcs);
-    const seatIssuer = swap.getSeatIssuer();
+    const seatIssuer = scooter.getIssuer();
     t.equals(swap.getIssuers(), undefined);
     const player1Offer = harden([
       {

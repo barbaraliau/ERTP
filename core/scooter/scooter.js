@@ -10,13 +10,11 @@ import { makeState } from './state';
 import { makeSeatMint } from './seatMint';
 
 const makeScooter = () => {
-  // TODO: the seatIssuer should be a long lived identity and should
-  // be defined here. For now we are defining it within the
-  // installation.
+  // The seat issuer is a long lived identity over many contract installations
+  const { getNextSeatId, seatMint, seatIssuer, addUseObj } = makeSeatMint();
 
   return harden({
     install: srcs => {
-      const { getNextSeatId, seatMint, seatIssuer, addUseObj } = makeSeatMint();
       let state;
 
       // Escrow does the escrowing, but also updates the `purseQuantities`
@@ -163,10 +161,9 @@ const makeScooter = () => {
         },
         getIssuers: _ =>
           (state && state.issuers && state.issuers.slice()) || undefined,
-        getSeatIssuer: () => seatIssuer,
       });
     },
-    // getIssuer: () => seatIssuer,
+    getIssuer: () => seatIssuer,
   });
 };
 export { makeScooter };
