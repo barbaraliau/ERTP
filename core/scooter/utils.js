@@ -40,6 +40,21 @@ const ruleEqual = (leftRule, rightRule) => leftRule.rule === rightRule.rule;
 const amountEqual = (assay, leftRule, rightRule) =>
   assay.equals(leftRule.amount, rightRule.amount);
 
+const offerEqual = (assays, leftOffer, rightOffer) => {
+  const isLengthEqual = leftOffer.length === rightOffer.length;
+  if (!isLengthEqual) {
+    return false;
+  }
+  return leftOffer
+    .map((leftRule, i) => {
+      return (
+        ruleEqual(leftRule, rightOffer[i]) &&
+        amountEqual(assays[i], leftRule, rightOffer[i])
+      );
+    })
+    .reduce(allTrue);
+};
+
 const allAmountsEqual = (assays, leftRules, rightRules) =>
   assays
     .map((assay, i) => assay.equals(leftRules[i].amount, rightRules[i].amount))
@@ -57,4 +72,5 @@ export {
   ruleEqual,
   amountEqual,
   allAmountsEqual,
+  offerEqual,
 };

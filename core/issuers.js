@@ -25,10 +25,10 @@ Description must be truthy: ${description}`;
   // Each of these methods is used below and must be defined (even in
   // a trivial way) in any configuration
   const {
-    makeIssuerTrait,
-    makePaymentTrait,
-    makePurseTrait,
-    makeMintTrait,
+    makeCustomIssuer,
+    makeCustomPayment,
+    makeCustomPurse,
+    makeCustomMint,
     makeMintKeeper,
     strategy,
   } = makeConfig();
@@ -67,10 +67,7 @@ Description must be truthy: ${description}`;
 
     // makePaymentTrait is defined in the passed-in configuration and adds
     // additional methods to corePayment
-    const payment = harden({
-      ...makePaymentTrait(corePayment, issuer),
-      ...corePayment,
-    });
+    const payment = makeCustomPayment(corePayment, issuer);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -100,10 +97,7 @@ Description must be truthy: ${description}`;
     });
     // makePaymentTrait is defined in the passed-in configuration and adds
     // additional methods to corePayment
-    const payment = harden({
-      ...makePaymentTrait(corePayment, issuer),
-      ...corePayment,
-    });
+    const payment = makeCustomPayment(corePayment, issuer);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -224,10 +218,7 @@ Description must be truthy: ${description}`;
 
   // makeIssuerTrait is defined in the passed-in configuration and adds
   // additional methods to coreIssuer.
-  const issuer = harden({
-    ...makeIssuerTrait(coreIssuer),
-    ...coreIssuer,
-  });
+  const issuer = makeCustomIssuer(coreIssuer);
 
   const label = harden({ issuer, description });
 
@@ -296,10 +287,7 @@ Description must be truthy: ${description}`;
 
       // makePurseTrait is defined in the passed-in configuration and
       // adds additional methods to corePurse
-      const purse = harden({
-        ...makePurseTrait(corePurse, issuer),
-        ...corePurse,
-      });
+      const purse = makeCustomPurse(corePurse, issuer);
 
       purseKeeper.recordNew(purse, initialBalance);
       return purse;
@@ -308,10 +296,7 @@ Description must be truthy: ${description}`;
 
   // makeMintTrait is defined in the passed-in configuration and
   // adds additional methods to coreMint
-  const mint = harden({
-    ...makeMintTrait(coreMint, issuer, assay, mintKeeper),
-    ...coreMint,
-  });
+  const mint = makeCustomMint(coreMint, issuer, assay, mintKeeper);
 
   return mint;
 }

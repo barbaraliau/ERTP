@@ -11,26 +11,34 @@ import { seatStrategy } from './seatStrategy';
  * methods. The use object is associated with an underlying asset that
  * provides the authority to use it.
  */
-function makeSeatConfigMaker(makeUseObj) {
+function makeSeatConfigMaker(makeUseObjListForPayment, makeUseObjListForPurse) {
   function makeSeatConfig() {
     return harden({
-      makePaymentTrait(superPayment, issuer) {
+      makeCustomPayment(superPayment, issuer) {
+        const payment = harden({
+          ...superPayment,
+          // This creates a new use object which destroys the payment
+          unwrap: () => makeUseObjListForPayment(issuer, payment),
+        });
+        return payment;
+      },
+      makeCustomPurse(superPurse, issuer) {
+        const purse = harden({
+          ...superPurse,
+          // This creates a new use object which empties the purse
+          unwrap: () => makeUseObjListForPurse(issuer, purse),
+        });
+        return purse;
+      },
+      makeCustomMint(superMint) {
         return harden({
-          // This creates a new use object on every call.
-          unwrap: () => makeUseObj(issuer, superPayment),
+          ...superMint,
         });
       },
-      makePurseTrait(superPurse, issuer) {
+      makeCustomIssuer(superIssuer) {
         return harden({
-          // This creates a new use object on every call.
-          unwrap: () => makeUseObj(issuer, superPurse),
+          ...superIssuer,
         });
-      },
-      makeMintTrait(_superMint) {
-        return harden({});
-      },
-      makeIssuerTrait(_superIssuer) {
-        return harden({});
       },
       makeMintKeeper: makeCoreMintKeeper,
       strategy: seatStrategy,

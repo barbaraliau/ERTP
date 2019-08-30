@@ -3,174 +3,170 @@ import harden from '@agoric/harden';
 import { insist } from '../../util/insist';
 import makePromise from '../../util/makePromise';
 
-import { makeStateMachine } from './stateMachine';
 import { isOfferSafeForAll, areRightsConserved } from './isOfferSafe';
 import { mapArrayOnMatrix } from './utils';
-import { extractIds } from './seatStrategy';
-import { makeSeatConfigMaker } from './seatConfig';
-import { makeMint } from '../issuers';
 
-function toAmountMatrix(assays, quantitiesMatrix) {
-  const assayMakes = assays.map(assay => assay.make);
-  return mapArrayOnMatrix(quantitiesMatrix, assayMakes);
-}
+import { makeState } from './state';
+import { makeSeatMint } from './seatMint';
 
-const makeInstitution = srcs => {
-  const sm = makeStateMachine(srcs.startState, srcs.allowedTransitions);
+const makeScooter = () => {
+  // TODO: the seatIssuer should be a long lived identity and should
+  // be defined here. For now we are defining it within the
+  // installation.
 
-  // make safe for mechanism code to have (harden?)
-  let issuers; // array
-  let assays; // array
-  let strategies; // array
-  const results = []; // promises that need to be resolved to payments per player
+  return harden({
+    install: srcs => {
+      const { getNextSeatId, seatMint, seatIssuer, addUseObj } = makeSeatMint();
+      let state;
 
-  const offers = []; // matrix: rules per player
-  const quantities = []; // matrix: quantities per player
-
-  // hold closely - do not give to mechanism
-  let purses; // array
-  let purseQuantities; // array
-
-  function makePayments(amountsMatrix) {
-    return amountsMatrix.map(row =>
-      row.map((amount, i) => purses[i].withdraw(amount, 'payout')),
-    );
-  }
-
-  // Escrow does the escrowing, but also updates the `purseQuantities`
-  // (the current balance of the purses) and `quantities` (the amount
-  // escrowed per player per issuer)
-  async function escrow(rules, payments) {
-    const quantitiesForPlayerPromises = purses.map(async (purse, i) => {
-      // if the user's contractual understanding includes
-      // "haveExactly", make sure that they have supplied the
-      // coordinating payment
-      if (rules[i].rule === 'haveExactly') {
-        const amount = await purse.depositExactly(rules[i].amount, payments[i]);
-        return amount.quantity;
-      }
-      return strategies[i].empty();
-    });
-
-    const quantitiesForPlayer = await Promise.all(quantitiesForPlayerPromises);
-    // has side-effects
-    // eslint-disable-next-line array-callback-return
-    quantitiesForPlayer.map((quantity, i) => {
-      purseQuantities[i] = strategies[i].with(purseQuantities[i], quantity);
-    });
-    quantities.push(quantitiesForPlayer);
-  }
-
-  function initializeRecordkeeping(submittedIssuers) {
-    issuers = submittedIssuers;
-    // we have a lot of round trips here. TODO: fewer round trips
-    assays = issuers.map(issuer => issuer.getAssay());
-    strategies = issuers.map(issuer => issuer.getStrategy());
-    purses = issuers.map(issuer => issuer.makeEmptyPurse());
-    purseQuantities = strategies.map(strategy => strategy.empty());
-  }
-
-  function allocate() {
-    const reallocation = srcs.reallocate(quantities, offers);
-    insist(
-      areRightsConserved(strategies, purseQuantities, reallocation),
-    )`Rights are not conserved in the proposed reallocation`;
-
-    const amounts = toAmountMatrix(assays, reallocation);
-    insist(
-      isOfferSafeForAll(assays, offers, amounts),
-    )`The proposed reallocation was not offer safe`;
-
-    const payments = makePayments(amounts);
-    results.map((result, i) => result.res(payments[i]));
-  }
-
-  function insistAssetHasAmount(issuer, asset, amount) {
-    insist(issuer.getAssay().includes(asset.getBalance(), amount))`\
-      ERTP asset ${asset} does not include amount ${amount}`;
-  }
-
-  const idsToSeats = new Map();
-  let nextSeatId = 0;
-
-  const makeUseObj = (issuer, asset) => {
-    const allegedAmount = asset.getBalance();
-    insistAssetHasAmount(issuer, asset, allegedAmount);
-    const ids = extractIds(allegedAmount.quantity);
-    const seats = ids.map(id => idsToSeats.get(id));
-    return seats;
-  };
-
-  const makeSeatConfig = makeSeatConfigMaker(makeUseObj);
-
-  const seatMint = makeMint('scooterSeats', makeSeatConfig);
-
-  // TODO: use the code library and make this meaningful
-  const srcsName = 'swap';
-
-  const institution = harden({
-    init(submittedIssuers) {
-      insist(sm.canTransitionTo('open'))`could not be opened`;
-      insist(srcs.areIssuersValid(submittedIssuers))`issuers are not valid`;
-      initializeRecordkeeping(submittedIssuers);
-      sm.transitionTo('open');
-      return institution;
-    },
-    getIssuers: _ => (issuers && issuers.slice()) || undefined,
-    async makeOffer(rules, payments) {
-      const result = makePromise();
-
-      // fail-fast if the offer isn't valid
-      if (!srcs.isValidOffer(issuers, assays, offers, rules, quantities)) {
-        const quantity = harden([
-          {
-            src: srcsName,
-            id: nextSeatId,
-            offerMade: rules,
+      // Escrow does the escrowing, but also updates the `purseQuantities`
+      // (the current balance of the purses) and `quantities` (the amount
+      // escrowed per player per issuer)
+      async function escrow(rules, payments) {
+        const quantitiesForPlayerPromises = state.purses.map(
+          async (purse, i) => {
+            // if the user's contractual understanding includes
+            // "haveExactly", make sure that they have supplied the
+            // coordinating payment
+            if (rules[i].rule === 'haveExactly') {
+              const amount = await purse.depositExactly(
+                rules[i].amount,
+                payments[i],
+              );
+              return amount.quantity;
+            }
+            return state.strategies[i].empty();
           },
-        ]);
-        const payment = seatMint.mint(quantity);
-        const seat = harden({
-          claim: () => result.reject('offer was invalid'),
-          refund: () => payments,
+        );
+
+        const quantitiesForPlayer = await Promise.all(
+          quantitiesForPlayerPromises,
+        );
+        // has side-effects
+        // eslint-disable-next-line array-callback-return
+        quantitiesForPlayer.map((quantity, i) => {
+          state.purseQuantities[i] = state.strategies[i].with(
+            state.purseQuantities[i],
+            quantity,
+          );
         });
-        idsToSeats.set(nextSeatId, seat);
-        nextSeatId += 1;
-        return payment;
+        state.quantities.push(quantitiesForPlayer);
       }
 
-      // TODO: handle good offers but some bad payments. We may have
-      // already deposited some good payments by the time the bad
-      // payments occur.
-      await escrow(rules, payments);
-
-      // keep the valid offer
-      offers.push(rules);
-      results.push(result);
-
-      // check if canReallocate whenever a valid offer is made
-      if (srcs.canReallocate(offers)) {
-        allocate();
+      function toAmountMatrix(assays, quantitiesMatrix) {
+        const assayMakes = assays.map(assay => assay.make);
+        return mapArrayOnMatrix(quantitiesMatrix, assayMakes);
       }
-      const quantity = harden([
-        {
-          src: srcsName,
-          id: nextSeatId,
-          offerMade: rules,
+
+      function makePayments(amountsMatrix) {
+        return amountsMatrix.map(row =>
+          row.map((amount, i) => state.purses[i].withdraw(amount, 'payout')),
+        );
+      }
+
+      function allocate() {
+        const reallocation = srcs.reallocate(state.quantities, state.offers);
+        insist(
+          areRightsConserved(
+            state.strategies,
+            state.purseQuantities,
+            reallocation,
+          ),
+        )`Rights are not conserved in the proposed reallocation`;
+
+        const amounts = toAmountMatrix(state.assays, reallocation);
+        insist(
+          isOfferSafeForAll(state.assays, state.offers, amounts),
+        )`The proposed reallocation was not offer safe`;
+
+        const payments = makePayments(amounts);
+        state.results.map((result, i) => result.res(payments[i]));
+      }
+
+      const makeOfferMaker = offerToBeMade => {
+        const makeOffer = async (offerMade, payments) => {
+          const result = makePromise();
+          // fail-fast if the offer isn't valid
+          if (!srcs.isValidOffer(state.assays, offerToBeMade, offerMade)) {
+            const quantity = harden([
+              {
+                src: srcs.name,
+                id: getNextSeatId(),
+                offerMade,
+              },
+            ]);
+            const payment = seatMint.mint(quantity);
+            const seat = harden({
+              claim: () => result.reject('offer was invalid'),
+              refund: () => payments,
+            });
+            addUseObj(quantity[0].id, seat);
+            return payment;
+          }
+
+          // TODO: handle good offers but some bad payments. We may have
+          // already deposited some good payments by the time the bad
+          // payments occur.
+          await escrow(offerMade, payments);
+
+          // keep the valid offer
+          state.offers.push(offerMade);
+          state.results.push(result);
+
+          // check if canReallocate whenever a valid offer is made
+          if (srcs.canReallocate(state.offers)) {
+            allocate();
+          }
+          const quantity = harden([
+            {
+              src: srcs.name,
+              id: getNextSeatId(),
+              offerMade,
+            },
+          ]);
+          const payment = seatMint.mint(quantity);
+          const seat = harden({
+            claim: () => result.p,
+            refund: () => [],
+          });
+          addUseObj(quantity[0].id, seat);
+          return payment;
+        };
+        return harden(makeOffer);
+      };
+
+      return harden({
+        async init(issuers, startingInfo) {
+          insist(srcs.areIssuersValid(issuers))`issuers are not valid`;
+          state = makeState(issuers);
+          const wantedOffers = srcs.makeWantedOffers(issuers, startingInfo);
+          const payments = wantedOffers.map(offer => {
+            const quantity = harden([
+              {
+                src: srcs.name,
+                id: getNextSeatId(),
+                offerToBeMade: offer,
+              },
+            ]);
+            addUseObj(
+              quantity[0].id,
+              harden({ makeOffer: makeOfferMaker(offer) }),
+            );
+            const purse = seatMint.mint(harden(quantity));
+            return purse.withdrawAll();
+          });
+          // return an array of ERTP payments that have a quantity representing each
+          // of the possible seats. When `unwrap` is called on this type
+          // of ERTP asset (whether in purse or payment form), the list of
+          // associated use objects with a `makeOffer` method is returned
+          return payments;
         },
-      ]);
-      const payment = seatMint.mint(quantity);
-      const seat = harden({
-        claim: () => result.p,
-        refund: () => [],
+        getIssuers: _ =>
+          (state && state.issuers && state.issuers.slice()) || undefined,
+        getSeatIssuer: () => seatIssuer,
       });
-      idsToSeats.set(nextSeatId, seat);
-      nextSeatId += 1;
-      return payment;
     },
-    claim: _ => {},
+    // getIssuer: () => seatIssuer,
   });
-  return institution;
 };
-
-export { makeInstitution };
+export { makeScooter };

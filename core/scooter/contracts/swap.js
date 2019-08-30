@@ -1,11 +1,12 @@
 import harden from '@agoric/harden';
 
+import { insist } from '../../../util/insist';
+
 import {
   makeHasOkLength,
   makeHasOkRules,
   hasOkIssuers,
-  ruleEqual,
-  allAmountsEqual,
+  offerEqual,
 } from '../utils';
 
 const hasOkLength = makeHasOkLength(2);
@@ -14,34 +15,33 @@ const hasOkRules = makeHasOkRules([
   ['wantExactly', 'haveExactly'],
 ]);
 
-const swappedRules = (priorOffer, newOffer) =>
-  ruleEqual(priorOffer[0], newOffer[1]) &&
-  ruleEqual(priorOffer[1], newOffer[0]);
-
-const isMatch = (assays, priorOffer, newOffer) =>
-  swappedRules(priorOffer, newOffer) &&
-  allAmountsEqual(assays, priorOffer, newOffer);
+const makeSecondOffer = firstOffer => {
+  return [
+    {
+      rule: firstOffer[1].rule,
+      amount: firstOffer[0].amount,
+    },
+    {
+      rule: firstOffer[0].rule,
+      amount: firstOffer[1].amount,
+    },
+  ];
+};
 
 const swapSrcs = harden({
-  startState: 'empty',
-  allowedTransitions: [
-    ['empty', ['open']],
-    ['open', ['reallocating', 'cancelled']],
-    ['reallocating', ['closed']],
-    ['cancelled', []],
-    ['closed', []],
-  ],
+  name: 'swap',
   areIssuersValid: hasOkLength,
-  isValidOffer: (issuers, assays, offersSoFar, newOffer, _quantities) => {
-    const hasOkFormat =
+  makeWantedOffers: (issuers, newOffer) => {
+    // for swap, a single offer defines the other offer.
+    insist(
       hasOkLength(newOffer) &&
-      hasOkRules(newOffer) &&
-      hasOkIssuers(issuers, newOffer);
-    if (offersSoFar.length >= 1) {
-      return hasOkFormat && isMatch(assays, offersSoFar[0], newOffer);
-    }
-    return hasOkFormat;
+        hasOkRules(newOffer) &&
+        hasOkIssuers(issuers, newOffer),
+    )`the offer does not have the correct format`;
+    return harden([newOffer, makeSecondOffer(newOffer)]);
   },
+  isValidOffer: (assays, offerToBeMade, offerMade) =>
+    offerEqual(assays, offerToBeMade, offerMade),
   canReallocate: offers => offers.length === 2, // we can reallocate with 2 valid offers
   reallocate: allocations => harden([allocations[1], allocations[0]]),
   cancel: allocations => harden(allocations),
