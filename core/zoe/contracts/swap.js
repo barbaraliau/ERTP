@@ -1,7 +1,5 @@
 import harden from '@agoric/harden';
 
-import { insist } from '../../../util/insist';
-
 import {
   makeHasOkLength,
   makeHasOkRules,
@@ -29,22 +27,20 @@ const makeSecondOffer = firstOffer => {
 };
 
 const swapSrcs = harden({
+  // TODO: this name should be in the namespace of the smart contract library
   name: 'swap',
   areIssuersValid: hasOkLength,
-  makeWantedOffers: (issuers, newOffer) => {
-    // for swap, a single offer defines the other offer.
-    insist(
-      hasOkLength(newOffer) &&
-        hasOkRules(newOffer) &&
-        hasOkIssuers(issuers, newOffer),
-    )`the offer does not have the correct format`;
-    return harden([newOffer, makeSecondOffer(newOffer)]);
+  isValidInitialOffer: (issuers, newOffer) =>
+    hasOkLength(newOffer) &&
+    hasOkRules(newOffer) &&
+    hasOkIssuers(issuers, newOffer),
+  makeWantedOffers: firstOffer => {
+    return harden([makeSecondOffer(firstOffer)]);
   },
   isValidOffer: (assays, offerToBeMade, offerMade) =>
     offerEqual(assays, offerToBeMade, offerMade),
-  canReallocate: offers => offers.length === 2, // we can reallocate with 2 valid offers
+  canReallocate: (status, offers) => status === 'open' && offers.length === 2, // we can reallocate with 2 valid offers
   reallocate: allocations => harden([allocations[1], allocations[0]]),
-  cancel: allocations => harden(allocations),
 });
 
 harden(swapSrcs);

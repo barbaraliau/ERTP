@@ -2,35 +2,40 @@
 
 If I want to trade one kind of asset for another kind, I could send
 you the asset and ask you to send me the other kind back. But, you
-could choose to behave opportunistically and take my asset and give
+could choose to behave opportunistically: receive my asset and give
 nothing back. To solve this problem, the Swap contract allows users to
-securely trade one kind of eright for another kind, leveraging Scooter
+securely trade one kind of eright for another kind, leveraging Zoe
 for escrow and offer-safety. At no time does any user have the
 opportunity to behave opportunistically.
 
 ## Bid Format 
 
 Someone can create a swap by initializing it with an array of issuers,
-essentially saying that they want to exchange something of the brand
-issuer1 with the brand issuer2:
+(essentially saying that they want to exchange something of the brand
+issuer1 with the brand issuer2), as well as an offer and the payments
+for that offer:
 
 ```js
-swap.init([moolaIssuer, bucksIssuer]);
+swap.init([moolaIssuer, bucksIssuer], initialOffer, paymentsForOffer);
 ```
 
-The first user can create an array of rules per issuer/brand. For
-instance, maybe they have 3 moola to offer and want 5 bucks in return.
-If they don't know how to structure the rules because they don't know
-the order of the issuers, they can call `getIssuers` on the swap
-object to get the array of issuers. If any of their rules are
-`haveExactly` or `haveAtLeast`, the accompanying payment in payments
-must equal or be more than the amount specified in the rule.
-`wantExactly` is used to find a matching rule and enforce offer
-safety.
+The `initialOffer` is an array of "rules" per issuer. For instance,
+maybe the first player has 3 moola to offer and wants 5 bucks in
+return. If they don't know how to structure the rules because they
+don't know the order of the issuers, they can call `getIssuers` on the
+swap object to get the array of issuers. 
+
+A swap offer by definition has a rules array of length 2, which must
+have one rule `haveExactly`, and the other rule must be `wantExactly`.
+The order of these rules doesn't matter, as long as the order matches
+the order of the issuers. The accompanying `paymentsForOffer` array
+must contain an ERTP payment in the index matching the index of the
+`haveExactly` rule. The `wantExactly` rule is used to find a matching
+rule and enforce offer safety.
 
 ```js
 
-const player1Rules = [ 
+const initialOffer = [ 
   { rule: 'haveExactly', 
     amount: moola3, 
   }, 
@@ -39,13 +44,28 @@ const player1Rules = [
   }, 
 ];
 
-const player1Payments = [
+const paymentsForOffer = [
   moola3Payment,
   undefined, // leave the payment in the 'wantExactly' slot as undefined
 ];
-
-swap.makeOffer(player1Rules, player1Payments);
 ```
+
+The initial user (let's call them player1) then receives an object
+with two properties: `seat` and `invites`. `seat` is their own seat at
+the contract; `invites` is an array of ERTP payments that represent
+invites to make an offer. These invites can be sent to other people to
+invite them to participate. 
+
+In a swap, there are only two seats: the one created by player1 and an
+additional one that is the opposite position in the swap. Let's say
+that player1 takes the `invite` they received in `invites` and gives
+it to player2. Now player2 can examine the invite and make it it
+matches their expectations:
+
+
+
+-----
+
 
 Another user can enter the contract if their rules for the contract
 *match* the rules specified by the first user:

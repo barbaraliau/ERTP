@@ -33,7 +33,9 @@ const makeHasOkRules = validRules => offer =>
   validRules.map((rules, i) => rules[i] === offer[i].rule).reduce(anyTrue);
 
 const hasOkIssuers = (issuers, offer) =>
-  issuers.map((issuer, i) => offer[i].amount.label.issuer === issuer);
+  issuers
+    .map((issuer, i) => offer[i].amount.label.issuer === issuer)
+    .reduce(allTrue);
 
 const ruleEqual = (leftRule, rightRule) => leftRule.rule === rightRule.rule;
 

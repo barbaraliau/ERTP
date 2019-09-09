@@ -1,22 +1,22 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { makeSeatConfigMaker } from '../../../../core/scooter/seatConfig';
+import { makeSeatConfigMaker } from '../../../../core/zoe/seatConfig';
 import { makeMint } from '../../../../core/issuers';
-import { offerEqual } from '../../../../core/scooter/utils';
+import { offerEqual } from '../../../../core/zoe/utils';
 import { insist } from '../../../../util/insist';
 
-// quantity = [{
+// quantity = {
 //   src: 'swap',
 //   id: 1,
 //   offerToBeMade: [rule1, rule2],
-// }]
+// }
 
-// quantity = [{
+// quantity = {
 //   src: 'swap',
 //   id: 1,
 //   offerMade: [rule1, rule2],
-// }]
+// }
 
 const setup = () => {
   const moolaMint = makeMint('moola');
@@ -42,6 +42,7 @@ test('seatMint', async t => {
   const { assays } = setup();
 
   const makeUseObj = quantity => {
+    insist(quantity !== null)`the asset is empty or already used`;
     if (quantity.offerToBeMade) {
       return harden({
         makeOffer: offer => {
@@ -61,75 +62,68 @@ test('seatMint', async t => {
     return harden({});
   };
 
-  const makeUseObjListForPayment = async (issuer, payment) => {
-    const { quantity } = payment.getBalance();
-    const useObjs = quantity.map(makeUseObj);
-    await issuer.burnAll(payment);
-    return useObjs;
+  // I'm not happy with this ducktyping but the alternative is having
+  // two methods that have duplicate code
+  const burnAndMakeUseObj = async (issuer, asset) => {
+    const { quantity } = asset.getBalance();
+    const useObj = makeUseObj(quantity);
+
+    // if it's a purse, we need to withdraw
+    if (Object.prototype.hasOwnProperty.call(asset, 'withdrawAll')) {
+      const payment = asset.withdrawAll();
+      await issuer.burnAll(payment);
+    } else {
+      // it's a payment, we can go forward with burning it
+      await issuer.burnAll(asset);
+    }
+    return useObj;
   };
 
-  const makeUseObjListForPurse = async (issuer, purse) => {
-    const ids = purse.getBalance().quantity;
-    const useObjs = ids.map(makeUseObj);
-    const paymentP = purse.withdrawAll();
-    await issuer.burnAll(paymentP);
-    return useObjs;
-  };
-
-  const makeSeatConfig = makeSeatConfigMaker(
-    makeUseObjListForPayment,
-    makeUseObjListForPurse,
-  );
+  const makeSeatConfig = makeSeatConfigMaker(burnAndMakeUseObj);
 
   const seatMint = makeMint('seats', makeSeatConfig);
 
-  const purse1Quantity = harden([
-    {
-      src: 'swap',
-      id: 1,
-      offerToBeMade: [
-        { rule: 'haveExactly', amount: assays[0].make(8) },
-        { rule: 'wantExactly', amount: assays[1].make(6) },
-      ],
-    },
-  ]);
+  const purse1Quantity = harden({
+    src: 'swap',
+    id: 1,
+    offerToBeMade: [
+      { rule: 'haveExactly', amount: assays[0].make(8) },
+      { rule: 'wantExactly', amount: assays[1].make(6) },
+    ],
+  });
 
   const purse1 = seatMint.mint(purse1Quantity);
   t.deepEqual(purse1.getBalance().quantity, purse1Quantity);
 
-  const useObjListPurse1 = await purse1.unwrap();
+  const useObjPurse1 = await purse1.unwrap();
   // purse1 should be empty at this point. Note that `withdrawAll` doesn't
   // destroy purses; it just empties the balance.
-  t.deepEqual(purse1.getBalance().quantity, []);
+  t.deepEqual(purse1.getBalance().quantity, null);
 
-  // no use objects are returned when called again. Should this throw?
-  t.deepEqual(await purse1.unwrap(), []);
+  t.rejects(purse1.unwrap(), /the asset is empty or already used/);
 
-  t.equal(useObjListPurse1[0].makeOffer(purse1Quantity[0].offerToBeMade), true);
+  t.equal(useObjPurse1.makeOffer(purse1Quantity.offerToBeMade), true);
 
-  const purse2Quantity = harden([
-    {
-      src: 'swap',
-      id: 2,
-      offerMade: [
-        { rule: 'haveExactly', amount: assays[0].make(8) },
-        { rule: 'wantExactly', amount: assays[1].make(6) },
-      ],
-    },
-  ]);
+  const purse2Quantity = harden({
+    src: 'swap',
+    id: 2,
+    offerMade: [
+      { rule: 'haveExactly', amount: assays[0].make(8) },
+      { rule: 'wantExactly', amount: assays[1].make(6) },
+    ],
+  });
 
   const purse2 = seatMint.mint(purse2Quantity);
   t.deepEqual(purse2.getBalance().quantity, purse2Quantity);
 
-  const useObjListPurse2 = await purse2.unwrap();
+  const useObjPurse2 = await purse2.unwrap();
   // purse1 should be empty at this point. Note that `withdrawAll` doesn't
   // destroy purses; it just empties the balance.
-  t.deepEqual(purse2.getBalance().quantity, []);
+  t.deepEqual(purse2.getBalance().quantity, null);
 
-  // no use objects are returned when called again. Should this throw?
-  t.deepEqual(await purse2.unwrap(), []);
+  t.rejects(purse2.unwrap(), /the asset is empty or already used/);
 
-  t.deepEqual(useObjListPurse2[0].claim(), []);
+  t.deepEqual(useObjPurse2.claim(), []);
 
   t.end();
 });

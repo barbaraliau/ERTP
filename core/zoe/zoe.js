@@ -9,7 +9,7 @@ import { mapArrayOnMatrix } from './utils';
 import { makeState } from './state';
 import { makeSeatMint } from './seatMint';
 
-const makeScooter = () => {
+const makeZoe = () => {
   // The seat issuer is a long lived identity over many contract installations
   const { getNextSeatId, seatMint, seatIssuer, addUseObj } = makeSeatMint();
 
@@ -62,8 +62,7 @@ const makeScooter = () => {
         );
       }
 
-      function allocate() {
-        const reallocation = srcs.reallocate(state.quantities, state.offers);
+      function allocate(reallocation) {
         insist(
           areRightsConserved(
             state.strategies,
@@ -86,19 +85,17 @@ const makeScooter = () => {
           const result = makePromise();
           // fail-fast if the offer isn't valid
           if (!srcs.isValidOffer(state.assays, offerToBeMade, offerMade)) {
-            const quantity = harden([
-              {
-                src: srcs.name,
-                id: getNextSeatId(),
-                offerMade,
-              },
-            ]);
+            const quantity = harden({
+              src: srcs.name,
+              id: getNextSeatId(),
+              offerMade,
+            });
             const payment = seatMint.mint(quantity);
             const seat = harden({
               claim: () => result.reject('offer was invalid'),
               refund: () => payments,
             });
-            addUseObj(quantity[0].id, seat);
+            addUseObj(quantity.id, seat);
             return payment;
           }
 
@@ -111,59 +108,83 @@ const makeScooter = () => {
           state.offers.push(offerMade);
           state.results.push(result);
 
-          // check if canReallocate whenever a valid offer is made
-          if (srcs.canReallocate(state.offers)) {
-            allocate();
-          }
-          const quantity = harden([
-            {
-              src: srcs.name,
-              id: getNextSeatId(),
-              offerMade,
-            },
-          ]);
+          const quantity = harden({
+            src: srcs.name,
+            id: getNextSeatId(),
+            offerMade,
+          });
           const payment = seatMint.mint(quantity);
           const seat = harden({
-            claim: () => result.p,
-            refund: () => [],
+            claim: () => {
+              if (srcs.canReallocate(state.status, state.offers)) {
+                state.status = 'closed';
+                allocate(srcs.reallocate(state.quantities, state.offers));
+              }
+              return result.p;
+            },
+            cancel: () => {
+              state.status = 'cancelled';
+              allocate(state.quantities);
+              return result.p;
+            },
           });
-          addUseObj(quantity[0].id, seat);
+          addUseObj(quantity.id, seat);
           return payment;
         };
         return harden(makeOffer);
       };
 
-      return harden({
-        async init(issuers, startingInfo) {
+      const institution = harden({
+        async init(issuers, initialOffer, initialOfferPayments) {
           insist(srcs.areIssuersValid(issuers))`issuers are not valid`;
           state = makeState(issuers);
-          const wantedOffers = srcs.makeWantedOffers(issuers, startingInfo);
-          const payments = wantedOffers.map(offer => {
-            const quantity = harden([
-              {
-                src: srcs.name,
-                id: getNextSeatId(),
-                offerToBeMade: offer,
-              },
-            ]);
+
+          insist(
+            srcs.isValidInitialOffer(state.issuers, initialOffer),
+          )`this offer has an invalid format`;
+
+          state.status = 'open';
+
+          const makeOffer = makeOfferMaker(initialOffer);
+          const seat = makeOffer(initialOffer, initialOfferPayments);
+
+          // not all governing contracts will use offerInvites. Some
+          // will have a public function on the zoe institution.
+          // TODO: handle both cases
+          const wantedOffers = srcs.makeWantedOffers(initialOffer);
+
+          const invites = wantedOffers.map(offer => {
+            const quantity = harden({
+              src: srcs.name,
+              id: getNextSeatId(),
+              offerToBeMade: offer,
+            });
             addUseObj(
-              quantity[0].id,
+              quantity.id,
               harden({ makeOffer: makeOfferMaker(offer) }),
             );
             const purse = seatMint.mint(harden(quantity));
             return purse.withdrawAll();
           });
-          // return an array of ERTP payments that have a quantity representing each
-          // of the possible seats. When `unwrap` is called on this type
-          // of ERTP asset (whether in purse or payment form), the list of
-          // associated use objects with a `makeOffer` method is returned
-          return payments;
+          /**
+           * Seat: the seat for the initial player
+           * Invites: invitations for all of the other seats that can
+           * be sent to other players.
+           * Both seat and invites are ERTP payments that can be
+           * `unwrap`ed to get a use object.
+           */
+          return harden({
+            seat,
+            invites,
+          });
         },
         getIssuers: _ =>
           (state && state.issuers && state.issuers.slice()) || undefined,
+        getStatus: _ => (state && state.status) || undefined,
       });
+      return institution;
     },
     getIssuer: () => seatIssuer,
   });
 };
-export { makeScooter };
+export { makeZoe };

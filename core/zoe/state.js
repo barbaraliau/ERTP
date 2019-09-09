@@ -1,5 +1,6 @@
 const makeState = issuers => {
   const state = {
+    status: 'initialized',
     issuers,
     assays: issuers.map(issuer => issuer.getAssay()),
     strategies: issuers.map(issuer => issuer.getStrategy()),
