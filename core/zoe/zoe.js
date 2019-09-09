@@ -123,8 +123,10 @@ const makeZoe = () => {
               return result.p;
             },
             cancel: () => {
-              state.status = 'cancelled';
-              allocate(state.quantities);
+              if (state.status === 'open') {
+                state.status = 'cancelled';
+                allocate(state.quantities);
+              }
               return result.p;
             },
           });

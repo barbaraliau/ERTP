@@ -59,35 +59,29 @@ invite them to participate.
 In a swap, there are only two seats: the one created by player1 and an
 additional one that is the opposite position in the swap. Let's say
 that player1 takes the `invite` they received in `invites` and gives
-it to player2. Now player2 can examine the invite and make it it
-matches their expectations:
+it to player2. Now player2 can examine the invite with the utility
+`offerEqual` and make sure the offer matches their expectations:
 
-
-
------
-
-
-Another user can enter the contract if their rules for the contract
-*match* the rules specified by the first user:
 ```js
-
-const player2Rules = [ 
-  { rule: 'wantExactly',
-    amount: moola3,
-  },
-  { rule: 'haveExactly',
-    amount: bucks5,
-  }, 
-];
-
-const player2Payments = [
-  undefined,
-  bucks5Payment, 
-];
-
-swap.makeOffer(player2Rules, player2Payments);
+offerEqual(
+  [moolaAssay, bucksAssay],
+  invitePayment.getBalance().quantity.offerToBeMade,
+  intendedOffer,
+);
 ```
 
+If the invite is to player2's liking, they can unwrap the invite and
+make an offer:
+
+```js
+const player2invite = await invitePayment.unwrap();
+const payments = [moolaPayment, bucksPayment];
+
+const seatPayment = await player2invite.makeOffer(
+  intendedOffer
+  payments,
+);
+```
 For an offer to be valid, the offer must include two parts: the rules
 which describe the user's understanding of the contractual
 arrangement, and the payments to be escrowed. The rules should be
@@ -95,26 +89,13 @@ declarative and suitable for being an amount. The goods to be escrowed
 must be of the amount described in the contract under `haveExactly`.
 Without it, the offer is rejected.
 
-### State transitions
+Making an offer results in a seat payment which represents the right
+to claim the outcome of that seat. The payment, when unwrapped, has a
+use object that has two methods: `claim` and `cancel`.
 
-Before creation, the swap is EMPTY. Once swap.init() is called with an
-array of issuers, the state changes to OPEN and accepts offers. Before
-any offers are received, offers are rejected if the good offered does
-not match the amount and if the issuers of the rules and payments do
-not match the expected issuers. After an offer is received, additional
-offers are rejected if the offer does not additionally match the
-starting offer. 
+`cancel` cancels the contract for everyone and gives everyone a refund
+when they call `claim`. (If you are the person who calls cancel, you
+get your refund as the return value).
 
-Once a matching offer is found, the state changes to ALLOCATING and
-the allocation function is triggered. Once the allocation function
-returns a valid allocation that fits the invariants of offer safety
-and conservation of goods, the contract state changes to CLOSED and
-scooter sends the resultant payments. 
-
-### Transferring seats
-
-When does it make sense to be able to hand over a position in the swap
-contract?
-1. At OPEN, when the payment for the seat has already escrowed.
-
-In this version, anyone can make a swap offer since we require escrow.
+Calling `claim` attempts to do the reallocation and returns a promise
+for when the reallocation is done. `claim` can be called repeatedly.
