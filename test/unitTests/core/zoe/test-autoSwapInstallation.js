@@ -24,7 +24,7 @@ const setup = () => {
   });
 };
 
-test.only('zoe.install(swapSrcs) with valid offers', async t => {
+test.only('zoe.install(autoswapSrcs) with valid offers', async t => {
   try {
     const { issuers, mints, zoe, assays } = setup();
 
@@ -89,6 +89,8 @@ test.only('zoe.install(swapSrcs) with valid offers', async t => {
     // purseQuantities are 10, 5
 
     t.deepEquals(liquidityPayment.getBalance().quantity, 100);
+    t.deepEquals(moolaToSimAutoswap.getPurseQuantities(), [10, 5]);
+    t.deepEquals(moolaToSimAutoswap.getPoolQuantities(), [10, 5]);
 
     // 4: Imagine that Alice gives bob access to the
     // moolaToSimAutoswap object
@@ -123,6 +125,8 @@ test.only('zoe.install(swapSrcs) with valid offers', async t => {
 
     t.deepEqual(bobsNewSimPayment[0].getBalance(), issuers[0].makeAmount(0));
     t.deepEqual(bobsNewSimPayment[1].getBalance(), issuers[1].makeAmount(1));
+    t.deepEquals(moolaToSimAutoswap.getPurseQuantities(), [12, 4]);
+    t.deepEquals(moolaToSimAutoswap.getPoolQuantities(), [12, 4]);
 
     // 7: Bob looks up the price of 3 simoleans
 
@@ -151,101 +155,12 @@ test.only('zoe.install(swapSrcs) with valid offers', async t => {
 
     t.deepEqual(bobsNewMoolaPayment[0].getBalance(), issuers[0].makeAmount(6));
     t.deepEqual(bobsNewMoolaPayment[1].getBalance(), issuers[1].makeAmount(3));
+    t.deepEquals(moolaToSimAutoswap.getPurseQuantities(), [6, 7]);
+    t.deepEquals(moolaToSimAutoswap.getPoolQuantities(), [6, 7]);
 
     // 8: Alice removes some of her liquidity
-
-
-    // const [bobInvitePayment] = invites;
-
-    // // Check that the issuers and bobInvitePayment are as expected
-    // t.deepEquals(swap.getIssuers(), issuers);
-    // t.deepEquals(bobInvitePayment.getBalance().quantity, {
-    //   src: 'swap',
-    //   id: 0,
-    //   offerToBeMade: [
-    //     {
-    //       rule: 'wantExactly',
-    //       amount: issuers[0].makeAmount(3),
-    //     },
-    //     {
-    //       rule: 'haveExactly',
-    //       amount: issuers[1].makeAmount(7),
-    //     },
-    //   ],
-    // });
-
-    // // 3: Imagine that Alice sends the invite to Bob (not done here
-    // // since this test doesn't actually have separate vats/parties)
-
-    // // 4: Bob inspects the invite payment and checks that the offerToBeMade
-    // // matches what he expects
-
-    // const bobIntendedOffer = harden([
-    //   {
-    //     rule: 'wantExactly',
-    //     amount: issuers[0].makeAmount(3),
-    //   },
-    //   {
-    //     rule: 'haveExactly',
-    //     amount: issuers[1].makeAmount(7),
-    //   },
-    // ]);
-
-    // t.ok(
-    //   offerEqual(
-    //     assays,
-    //     bobInvitePayment.getBalance().quantity.offerToBeMade,
-    //     bobIntendedOffer,
-    //   ),
-    // );
-
-    // // 5: Only after assaying the invite does he unwrap it (destroying
-    // // the ERTP invite) and accept it
-    // const bobInvite = await bobInvitePayment.unwrap();
-    // const bobPayments = [bobMoolaPayment, bobSimoleanPayment];
-
-    // // 6: Bob makes his offer
-    // const bobSeatPayment = await bobInvite.makeOffer(
-    //   bobIntendedOffer,
-    //   bobPayments,
-    // );
-
-    // // 7: Alice unwraps the seatPayment to get her seat
-    // const aliceSeatPayment = await aliceSeatPaymentP;
-    // const aliceSeat = await aliceSeatPayment.unwrap();
-
-    // // 8: Bob unwraps the seatPayment to get his seat
-    // const bobSeat = await bobSeatPayment.unwrap();
-
-    // // 9: Alice claims her portion of the outcome (what Bob paid in)
-    // const aliceResult = await aliceSeat.claim();
-
-    // // 10: Bob claims his position of the outcome (what Alice paid in)
-    // const bobResult = await bobSeat.claim();
-
-    // // Alice gets back 0 of the kind she put in
-    // t.equals(aliceResult[0].getBalance().quantity, 0);
-
-    // // Alice got what she wanted
-    // t.deepEquals(aliceResult[1].getBalance(), aliceOffer[1].amount);
-
-    // // 11: Alice deposits her winnings to ensure she can
-    // await aliceMoolaPurse.depositAll(aliceResult[0]);
-    // await aliceSimoleanPurse.depositAll(aliceResult[1]);
-
-    // // 12: Bob deposits his winnings to ensure he can
-    // await bobMoolaPurse.depositAll(bobResult[0]);
-    // await bobSimoleanPurse.depositAll(bobResult[1]);
-
-    // // Assert that the correct outcome was achieved.
-    // // Alice had 3 moola and 0 simoleans.
-    // // Bob had 0 moola and 7 simoleans.
-    // // Now, Alice should have 0 moola and 7 simoleans.
-    // // Bob should have 3 moola and 0 simoleans.
-    // t.equals(aliceMoolaPurse.getBalance().quantity, 0);
-    // t.equals(aliceSimoleanPurse.getBalance().quantity, 7);
-    // t.equals(bobMoolaPurse.getBalance().quantity, 3);
-    // t.equals(bobSimoleanPurse.getBalance().quantity, 0);
+    // TODO
+    
   } catch (e) {
     t.assert(false, e);
     console.log(e);
