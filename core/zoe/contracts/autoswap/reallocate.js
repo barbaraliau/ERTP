@@ -1,14 +1,12 @@
 import { calcSwap } from './calcSwap';
 
-// quantities is a matrix in which the first row represents the
-// quantities of the pool, and the second row represents the tokens
+// quantities is a matrix in which the first row represents the tokens
 // put into the swap by the sole player
-const reallocate = quantities => {
-  const poolQuantities = quantities[0];
-  const playerQuantities = quantities[1];
+const reallocate = (poolQuantities, quantities) => {
+  const playerQuantities = quantities[0];
 
   const tokenInIndex = playerQuantities[0] > 0 ? 0 : 1;
-  const tokenOutIndex = tokenInIndex === 0 ? 1 : 0;
+  const tokenOutIndex = 1 - tokenInIndex;
 
   const { tokenOutQ, newTokenInPoolQ, newTokenOutPoolQ } = calcSwap(
     poolQuantities[tokenInIndex],
@@ -24,7 +22,10 @@ const reallocate = quantities => {
   newPlayerQuantities[tokenInIndex] = 0;
   newPlayerQuantities[tokenOutIndex] = tokenOutQ;
 
-  return [newPoolQuantities, newPlayerQuantities];
+  return {
+    poolQuantities: newPoolQuantities,
+    quantities: [newPlayerQuantities],
+  };
 };
 
 export { reallocate };

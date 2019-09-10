@@ -10,6 +10,7 @@ const makeState = issuers => {
     purses: issuers.map(issuer => issuer.makeEmptyPurse()),
   };
   state.purseQuantities = state.strategies.map(strategy => strategy.empty());
+  state.poolQuantities = state.strategies.map(strategy => strategy.empty());
   return state;
 };
 

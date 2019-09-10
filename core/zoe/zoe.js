@@ -118,7 +118,7 @@ const makeZoe = () => {
             claim: () => {
               if (srcs.canReallocate(state.status, state.offers)) {
                 state.status = 'closed';
-                allocate(srcs.reallocate(state.quantities, state.offers));
+                allocate(srcs.reallocate(state.quantities));
               }
               return result.p;
             },
