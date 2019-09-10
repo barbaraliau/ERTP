@@ -63,20 +63,7 @@ const makeZoe = () => {
         return mapArrayOnMatrix(quantitiesMatrix, assayMakes);
       }
 
-      function updatePurseQuantities() {
-        const transposedQuantities = transpose(state.quantities);
-        const totalsPerIssuer = transposedQuantities.map(
-          (quantitiesPerIssuer, i) => {
-            return quantitiesPerIssuer.reduce(state.strategies[i].with);
-          },
-        );
-        state.purseQuantities = totalsPerIssuer.map((total, i) =>
-          state.strategies[i].without(state.purseQuantities[i], total),
-        );
-      }
-
       function makePayments(amountsMatrix) {
-        updatePurseQuantities();
         return amountsMatrix.map(row =>
           row.map((amount, i) => state.purses[i].withdraw(amount, 'payout')),
         );
@@ -97,8 +84,10 @@ const makeZoe = () => {
           isOfferSafeForAll(state.assays, state.offers, amounts),
         )`The proposed reallocation was not offer safe`;
 
+        state.purseQuantities = state.poolQuantities;
         // don't make payments for the pool
         // TODO: fix this hack
+
         const payments = makePayments([amounts[0]]);
         state.results.map((result, i) => result.res(payments[i]));
         state.offers = [];
@@ -181,6 +170,8 @@ const makeZoe = () => {
               srcs.getPrice(state.poolQuantities, state.assays, amountsIn),
             makeOffer,
             getLiquidityIssuer: () => liquidityIssuer,
+            getPurseQuantities: _ => state.purseQuantities, // delete after testing
+            getPoolQuantities: _ => state.poolQuantities, // delete after testing
           });
         },
         getIssuers: _ =>
