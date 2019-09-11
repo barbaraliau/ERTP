@@ -30,18 +30,18 @@ to claim exactly with an amount with a quantity that has:
 
 invite: (can hold multiple invites by adding to the array)
 ```js
-quantity = [{
+quantity = {
   src: 'swap',
   id: 1,
   offerToBeMade: [rule1, rule2],
-}]
+}
 ```
 
 claim: (can hold multiple claims by adding to the array)
 ```js
-quantity = [{
+quantity = {
   src: 'swap',
   id: 1,
   offersMade: [rule1, rule2],
-}]
+}
 ```

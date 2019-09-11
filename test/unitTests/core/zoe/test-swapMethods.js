@@ -30,14 +30,14 @@ const setupIsValidOfferTest = () => {
   });
 };
 
-test('swap.isValidInitialOffer', t => {
-  const { isValidInitialOffer } = swapSrcs;
+test('swap.isValidInitialOfferDesc', t => {
+  const { isValidInitialOfferDesc } = swapSrcs;
   const { issuers } = setupIsValidOfferTest();
   const [moolaIssuer, simoleanIssuer] = issuers;
   t.test('first offer', st => {
     st.test('empty', sst => {
       try {
-        sst.notOk(isValidInitialOffer(issuers, []));
+        sst.notOk(isValidInitialOfferDesc(issuers, []));
       } catch (e) {
         sst.assert(false, e);
       } finally {
@@ -47,7 +47,7 @@ test('swap.isValidInitialOffer', t => {
     st.test('undefined elements in array', sst => {
       try {
         t.throws(
-          () => isValidInitialOffer(issuers, [undefined, undefined]),
+          () => isValidInitialOfferDesc(issuers, [undefined, undefined]),
           `Cannot read property 'rule' of undefined`,
         );
       } catch (e) {
@@ -58,7 +58,7 @@ test('swap.isValidInitialOffer', t => {
     });
     st.test('empty objects', sst => {
       try {
-        t.notOk(isValidInitialOffer(issuers, [{}, {}]));
+        t.notOk(isValidInitialOfferDesc(issuers, [{}, {}]));
       } catch (e) {
         sst.assert(false, e);
       } finally {
@@ -68,7 +68,7 @@ test('swap.isValidInitialOffer', t => {
     st.test('one correct, one empty', sst => {
       try {
         t.notOk(
-          isValidInitialOffer(issuers, [
+          isValidInitialOfferDesc(issuers, [
             { haveExactly: moolaIssuer.makeAmount(3) },
             {},
           ]),
@@ -82,7 +82,7 @@ test('swap.isValidInitialOffer', t => {
     st.test('one wrong issuer, one wrong rule', sst => {
       try {
         t.notOk(
-          isValidInitialOffer(issuers, [
+          isValidInitialOfferDesc(issuers, [
             { rule: 'haveExactly', amount: moolaIssuer.makeAmount(3) },
             { rule: 'haveExactly', amount: moolaIssuer.makeAmount(3) },
           ]),
@@ -96,7 +96,7 @@ test('swap.isValidInitialOffer', t => {
     st.test('amounts swapped', sst => {
       try {
         t.notOk(
-          isValidInitialOffer(issuers, [
+          isValidInitialOfferDesc(issuers, [
             { rule: 'haveExactly', amount: simoleanIssuer.makeAmount(7) },
             { rule: 'wantExactly', amount: moolaIssuer.makeAmount(3) },
           ]),
@@ -110,7 +110,7 @@ test('swap.isValidInitialOffer', t => {
     st.test('correct rules and amounts', sst => {
       try {
         t.ok(
-          isValidInitialOffer(issuers, [
+          isValidInitialOfferDesc(issuers, [
             { rule: 'haveExactly', amount: moolaIssuer.makeAmount(3) },
             { rule: 'wantExactly', amount: simoleanIssuer.makeAmount(7) },
           ]),
@@ -124,7 +124,7 @@ test('swap.isValidInitialOffer', t => {
     st.test('correct amounts, diff but correct rules', sst => {
       try {
         t.ok(
-          isValidInitialOffer(issuers, [
+          isValidInitialOfferDesc(issuers, [
             { rule: 'wantExactly', amount: moolaIssuer.makeAmount(3) },
             { rule: 'haveExactly', amount: simoleanIssuer.makeAmount(7) },
           ]),

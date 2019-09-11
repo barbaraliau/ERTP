@@ -1,7 +1,6 @@
 import harden from '@agoric/harden';
 
 import { insist } from '../../util/insist';
-import makePromise from '../../util/makePromise';
 
 import { isOfferSafeForAll, areRightsConserved } from './isOfferSafe';
 import { mapArrayOnMatrix } from './utils';
@@ -14,42 +13,8 @@ const makeZoe = () => {
   const { getNextSeatId, seatMint, seatIssuer, addUseObj } = makeSeatMint();
 
   return harden({
-    install: srcs => {
-      let state;
-
-      // Escrow does the escrowing, but also updates the `purseQuantities`
-      // (the current balance of the purses) and `quantities` (the amount
-      // escrowed per player per issuer)
-      async function escrow(rules, payments) {
-        const quantitiesForPlayerPromises = state.purses.map(
-          async (purse, i) => {
-            // if the user's contractual understanding includes
-            // "haveExactly", make sure that they have supplied the
-            // coordinating payment
-            if (rules[i].rule === 'haveExactly') {
-              const amount = await purse.depositExactly(
-                rules[i].amount,
-                payments[i],
-              );
-              return amount.quantity;
-            }
-            return state.strategies[i].empty();
-          },
-        );
-
-        const quantitiesForPlayer = await Promise.all(
-          quantitiesForPlayerPromises,
-        );
-        // has side-effects
-        // eslint-disable-next-line array-callback-return
-        quantitiesForPlayer.map((quantity, i) => {
-          state.purseQuantities[i] = state.strategies[i].with(
-            state.purseQuantities[i],
-            quantity,
-          );
-        });
-        state.quantities.push(quantitiesForPlayer);
-      }
+    makeInstance: issuers => {
+      const state = makeState(issuers);
 
       function toAmountMatrix(assays, quantitiesMatrix) {
         const assayMakes = assays.map(assay => assay.make);
@@ -62,129 +27,80 @@ const makeZoe = () => {
         );
       }
 
-      function allocate(reallocation) {
-        insist(
-          areRightsConserved(
-            state.strategies,
-            state.purseQuantities,
-            reallocation,
-          ),
-        )`Rights are not conserved in the proposed reallocation`;
+      // For now, these are assumed to be called by the middle layer,
+      // but we actually want the end user to be able to make an offer
+      // directly to zoe, then the middle layer can ask about it.
 
-        const amounts = toAmountMatrix(state.assays, reallocation);
-        insist(
-          isOfferSafeForAll(state.assays, state.offers, amounts),
-        )`The proposed reallocation was not offer safe`;
+      const instance = harden({
+        // Escrow does the escrowing, but also updates the `purseQuantities`
+        // (the current balance of the purses) and `quantities` (the amount
+        // escrowed per player per issuer)
+        escrow: async (offerDesc, payments, result) => {
+          const quantitiesForPlayerPromises = state.purses.map(
+            async (purse, i) => {
+              // if the user's contractual understanding includes
+              // "haveExactly", make sure that they have supplied the
+              // coordinating payment
+              if (offerDesc[i].rule === 'haveExactly') {
+                const amount = await purse.depositExactly(
+                  offerDesc[i].amount,
+                  payments[i],
+                );
+                return amount.quantity;
+              }
+              return state.strategies[i].empty();
+            },
+          );
 
-        const payments = makePayments(amounts);
-        state.results.map((result, i) => result.res(payments[i]));
-      }
-
-      const makeOfferMaker = offerToBeMade => {
-        const makeOffer = async (offerMade, payments) => {
-          const result = makePromise();
-          // fail-fast if the offer isn't valid
-          if (!srcs.isValidOffer(state.assays, offerToBeMade, offerMade)) {
-            const quantity = harden({
-              src: srcs.name,
-              id: getNextSeatId(),
-              offerMade,
-            });
-            const payment = seatMint.mint(quantity);
-            const seat = harden({
-              claim: () => result.reject('offer was invalid'),
-              refund: () => payments,
-            });
-            addUseObj(quantity.id, seat);
-            return payment;
-          }
-
-          // TODO: handle good offers but some bad payments. We may have
-          // already deposited some good payments by the time the bad
-          // payments occur.
-          await escrow(offerMade, payments);
+          const quantitiesForPlayer = await Promise.all(
+            quantitiesForPlayerPromises,
+          );
+          // has side-effects
+          // eslint-disable-next-line array-callback-return
+          quantitiesForPlayer.map((quantity, i) => {
+            state.purseQuantities[i] = state.strategies[i].with(
+              state.purseQuantities[i],
+              quantity,
+            );
+          });
+          state.quantities.push(quantitiesForPlayer);
 
           // keep the valid offer
-          state.offers.push(offerMade);
+          state.offerDescs.push(offerDesc);
           state.results.push(result);
-
-          const quantity = harden({
-            src: srcs.name,
-            id: getNextSeatId(),
-            offerMade,
-          });
-          const payment = seatMint.mint(quantity);
-          const seat = harden({
-            claim: () => {
-              if (srcs.canReallocate(state.status, state.offers)) {
-                state.status = 'closed';
-                allocate(srcs.reallocate(state.quantities));
-              }
-              return result.p;
-            },
-            cancel: () => {
-              if (state.status === 'open') {
-                state.status = 'cancelled';
-                allocate(state.quantities);
-              }
-              return result.p;
-            },
-          });
-          addUseObj(quantity.id, seat);
-          return payment;
-        };
-        return harden(makeOffer);
-      };
-
-      const institution = harden({
-        async init(issuers, initialOffer, initialOfferPayments) {
-          insist(srcs.areIssuersValid(issuers))`issuers are not valid`;
-          state = makeState(issuers);
-
+        },
+        // reallocation is a quantitiesMatrix
+        allocate: reallocation => {
           insist(
-            srcs.isValidInitialOffer(state.issuers, initialOffer),
-          )`this offer has an invalid format`;
+            areRightsConserved(
+              state.strategies,
+              state.purseQuantities,
+              reallocation,
+            ),
+          )`Rights are not conserved in the proposed reallocation`;
 
-          state.status = 'open';
+          const amounts = toAmountMatrix(state.assays, reallocation);
+          insist(
+            isOfferSafeForAll(state.assays, state.offerDescs, amounts),
+          )`The proposed reallocation was not offer safe`;
 
-          const makeOffer = makeOfferMaker(initialOffer);
-          const seat = makeOffer(initialOffer, initialOfferPayments);
-
-          // not all governing contracts will use offerInvites. Some
-          // will have a public function on the zoe institution.
-          // TODO: handle both cases
-          const wantedOffers = srcs.makeWantedOffers(initialOffer);
-
-          const invites = wantedOffers.map(offer => {
-            const quantity = harden({
-              src: srcs.name,
-              id: getNextSeatId(),
-              offerToBeMade: offer,
-            });
-            addUseObj(
-              quantity.id,
-              harden({ makeOffer: makeOfferMaker(offer) }),
-            );
-            const purse = seatMint.mint(harden(quantity));
-            return purse.withdrawAll();
-          });
-          /**
-           * Seat: the seat for the initial player
-           * Invites: invitations for all of the other seats that can
-           * be sent to other players.
-           * Both seat and invites are ERTP payments that can be
-           * `unwrap`ed to get a use object.
-           */
-          return harden({
-            seat,
-            invites,
-          });
+          const payments = makePayments(amounts);
+          state.results.map((result, i) => result.res(payments[i]));
         },
         getIssuers: _ =>
           (state && state.issuers && state.issuers.slice()) || undefined,
-        getStatus: _ => (state && state.status) || undefined,
+        getSeatMint: _ =>
+          harden({
+            getNextSeatId,
+            seatMint,
+            seatIssuer,
+            addUseObj,
+          }),
+        getAssays: _ => state.assays,
+        getQuantities: _ => state.quantities,
+        getOffers: _ => state.offerDescs,
       });
-      return institution;
+      return instance;
     },
     getIssuer: () => seatIssuer,
   });

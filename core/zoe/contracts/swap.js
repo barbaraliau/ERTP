@@ -13,8 +13,8 @@ const hasOkRules = makeHasOkRules([
   ['wantExactly', 'haveExactly'],
 ]);
 
-const makeSecondOffer = firstOffer => {
-  return [
+const makeSecondOffer = firstOffer =>
+  harden([
     {
       rule: firstOffer[1].rule,
       amount: firstOffer[0].amount,
@@ -23,23 +23,21 @@ const makeSecondOffer = firstOffer => {
       rule: firstOffer[0].rule,
       amount: firstOffer[1].amount,
     },
-  ];
-};
+  ]);
 
 const swapSrcs = harden({
   // TODO: this name should be in the namespace of the smart contract library
   name: 'swap',
   areIssuersValid: hasOkLength,
-  isValidInitialOffer: (issuers, newOffer) =>
-    hasOkLength(newOffer) &&
-    hasOkRules(newOffer) &&
-    hasOkIssuers(issuers, newOffer),
-  makeWantedOffers: firstOffer => {
-    return harden([makeSecondOffer(firstOffer)]);
-  },
-  isValidOffer: (assays, offerToBeMade, offerMade) =>
-    offerEqual(assays, offerToBeMade, offerMade),
-  canReallocate: (status, offers) => status === 'open' && offers.length === 2, // we can reallocate with 2 valid offers
+  isValidInitialOfferDesc: (issuers, newOfferDesc) =>
+    hasOkLength(newOfferDesc) &&
+    hasOkRules(newOfferDesc) &&
+    hasOkIssuers(issuers, newOfferDesc),
+  makeWantedOfferDescs: firstOfferDesc =>
+    harden([makeSecondOffer(firstOfferDesc)]),
+  isValidOfferDesc: (assays, offerDescToBeMade, offerDescMade) =>
+    offerEqual(assays, offerDescToBeMade, offerDescMade),
+  canReallocate: offerDescs => offerDescs.length === 2, // we can reallocate with 2 valid offers
   reallocate: allocations => harden([allocations[1], allocations[0]]),
 });
 

@@ -2,6 +2,7 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../../core/zoe/zoe';
+import { makeSwap } from '../../../../core/zoe/zoeMiddle';
 import { swapSrcs } from '../../../../core/zoe/contracts/swap';
 import { makeMint } from '../../../../core/issuers';
 import { offerEqual } from '../../../../core/zoe/utils';
@@ -24,27 +25,24 @@ const setup = () => {
   });
 };
 
-test('zoe.install with trivial srcs', t => {
+test('zoe.makeInstance with trivial middle layer and srcs', t => {
   try {
     // Zoe should be long-lived.
-    const { zoe } = setup();
-    const srcs = {
-      startState: 'empty',
-      allowedTransitions: [
-        ['empty', ['open']],
-        ['open', ['reallocating', 'cancelled']],
-        ['reallocating', ['dispersing']],
-        ['dispersing', ['closed']],
-        ['cancelled', []],
-        ['closed', []],
-      ],
+    const { zoe, issuers, assays } = setup();
+    const governingContract = {
       areIssuersValid: _issuers => true,
-      isValidOffer: (_issuers, _offersSoFar, _newOffer, _data) => true,
-      canReallocate: _offers => true,
       reallocate: allocations => allocations,
-      cancel: allocations => allocations,
     };
-    t.ok(zoe.install(srcs));
+    const zoeInstance = zoe.makeInstance(issuers);
+
+    const makeMiddleLayer = (zoeI, govC) => {
+      const zoeAssays = zoeI.getAssays();
+      t.deepEqual(zoeAssays, assays);
+      t.ok(govC.areIssuersValid(zoeI.getIssuers()));
+      t.deepEqual(govC.reallocate(zoeI.getQuantities()), []);
+    };
+    t.deepEqual(zoeInstance.getIssuers(), issuers);
+    makeMiddleLayer(zoeInstance, governingContract);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -52,7 +50,7 @@ test('zoe.install with trivial srcs', t => {
   }
 });
 
-test('zoe.install(swapSrcs) with valid offers', async t => {
+test('zoe.makeInstance with swap', async t => {
   try {
     const { issuers, mints, zoe, assays } = setup();
 
@@ -69,12 +67,13 @@ test('zoe.install(swapSrcs) with valid offers', async t => {
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a swap instance
-    const swap = zoe.install(swapSrcs);
+    const zoeInstance = zoe.makeInstance(issuers);
+    const swap = makeSwap(zoeInstance, swapSrcs);
 
-    // The issuers are undefined at this step
-    t.equals(swap.getIssuers(), undefined);
+    // The issuers are defined at this step
+    t.deepEquals(swap.getIssuers(), issuers);
 
-    // 2: Alice initializes the swap with issuers and an initial offer
+    // 2: Alice initializes the swap with an initial offer
     const aliceOffer = harden([
       {
         rule: 'haveExactly',
@@ -92,7 +91,6 @@ test('zoe.install(swapSrcs) with valid offers', async t => {
     // an offer has been made). She gets a seat since she made an
     // offer. Bob gets an invite.
     const { seat: aliceSeatPaymentP, invites } = await swap.init(
-      issuers,
       aliceOffer,
       alicePayments,
     );
@@ -159,10 +157,10 @@ test('zoe.install(swapSrcs) with valid offers', async t => {
     const bobSeat = await bobSeatPayment.unwrap();
 
     // 9: Alice claims her portion of the outcome (what Bob paid in)
-    const aliceResult = await aliceSeat.claim();
+    const aliceResult = await aliceSeat.getWinnings();
 
     // 10: Bob claims his position of the outcome (what Alice paid in)
-    const bobResult = await bobSeat.claim();
+    const bobResult = await bobSeat.getWinnings();
 
     // Alice gets back 0 of the kind she put in
     t.equals(aliceResult[0].getBalance().quantity, 0);
@@ -212,10 +210,11 @@ test('zoe.install(swapSrcs) but Alice cancels before bob claims', async t => {
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a swap instance
-    const swap = zoe.install(swapSrcs);
+    const zoeInstance = zoe.makeInstance(issuers);
+    const swap = makeSwap(zoeInstance, swapSrcs);
 
-    // The issuers are undefined at this step
-    t.equals(swap.getIssuers(), undefined);
+    // The issuers are defined at this step
+    t.deepEquals(swap.getIssuers(), issuers);
 
     // 2: Alice initializes the swap with issuers and an initial offer
     const aliceOffer = harden([
@@ -235,7 +234,6 @@ test('zoe.install(swapSrcs) but Alice cancels before bob claims', async t => {
     // an offer has been made). She gets a seat since she made an
     // offer. Bob gets an invite.
     const { seat: aliceSeatPaymentP, invites } = await swap.init(
-      issuers,
       aliceOffer,
       alicePayments,
     );
@@ -288,25 +286,22 @@ test('zoe.install(swapSrcs) but Alice cancels before bob claims', async t => {
     const bobInvite = await bobInvitePayment.unwrap();
     const bobPayments = [bobMoolaPayment, bobSimoleanPayment];
 
-    // 6: Bob makes his offer
-    const bobSeatPayment = await bobInvite.makeOffer(
-      bobIntendedOffer,
-      bobPayments,
-    );
-
-    // 7: Alice unwraps the seatPayment to get her seat
+    // 6: Alice unwraps the seatPayment to get her seat
     const aliceSeatPayment = await aliceSeatPaymentP;
     const aliceSeat = await aliceSeatPayment.unwrap();
 
-    // 8: Bob unwraps the seatPayment to get his seat
-    const bobSeat = await bobSeatPayment.unwrap();
-
-    // 9: Alice cancels
+    // 7: Alice cancels before bob makes his offer
     const aliceResult = await aliceSeat.cancel();
 
-    // 10: Bob still tries to claim his portion of the outcome
-    const bobResult = await bobSeat.claim();
-    t.equals(swap.getStatus(), 'cancelled');
+    // 6: Bob still tries to make his offer
+    t.rejects(
+      bobInvite.makeOffer(bobIntendedOffer, bobPayments),
+      /swap was cancelled/,
+    );
+
+    // TODO: we need offer safety on this refund
+    t.equals(bobPayments[0].getBalance().quantity, 0);
+    t.equals(bobPayments[1].getBalance().quantity, 7);
 
     // Alice gets back what she put in
     t.deepEquals(aliceResult[0].getBalance(), aliceOffer[0].amount);
@@ -318,9 +313,9 @@ test('zoe.install(swapSrcs) but Alice cancels before bob claims', async t => {
     await aliceMoolaPurse.depositAll(aliceResult[0]);
     await aliceSimoleanPurse.depositAll(aliceResult[1]);
 
-    // 12: Bob deposits his refund to ensure he can
-    await bobMoolaPurse.depositAll(bobResult[0]);
-    await bobSimoleanPurse.depositAll(bobResult[1]);
+    // 12: Bob deposits his original payments to ensure he can
+    await bobMoolaPurse.depositAll(bobPayments[0]);
+    await bobSimoleanPurse.depositAll(bobPayments[1]);
 
     // Assert that the correct refund was achieved.
     // Alice had 3 moola and 0 simoleans.

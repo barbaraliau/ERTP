@@ -21,11 +21,11 @@ test('stateMachine', t => {
       ['closed', []],
     ];
     const stateMachine = makeStateMachine(startState, allowedTransitions);
-    t.equal(stateMachine.getState(), 'empty');
+    t.equal(stateMachine.getStatus(), 'empty');
     t.ok(stateMachine.canTransitionTo('open'));
     t.notOk(stateMachine.canTransitionTo('closed'));
     stateMachine.transitionTo('open');
-    t.equal(stateMachine.getState(), 'open');
+    t.equal(stateMachine.getStatus(), 'open');
   } catch (e) {
     t.assert(false, e);
   } finally {

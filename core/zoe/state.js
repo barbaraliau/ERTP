@@ -5,7 +5,7 @@ const makeState = issuers => {
     assays: issuers.map(issuer => issuer.getAssay()),
     strategies: issuers.map(issuer => issuer.getStrategy()),
     results: [], // promises that need to be resolved to payments per player
-    offers: [], // matrix: rules per player
+    offerDescs: [], // matrix: rules per player
     quantities: [], // matrix: quantities per player
     purses: issuers.map(issuer => issuer.makeEmptyPurse()),
   };

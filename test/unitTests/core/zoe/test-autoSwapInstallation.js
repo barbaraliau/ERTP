@@ -24,7 +24,7 @@ const setup = () => {
   });
 };
 
-test.only('zoe.install(autoswapSrcs) with valid offers', async t => {
+test.skip('zoe.install(autoswapSrcs) with valid offers', async t => {
   try {
     const { issuers, mints, zoe, assays } = setup();
 

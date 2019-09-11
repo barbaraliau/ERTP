@@ -19,7 +19,7 @@ const makeStateMachine = (initialState, allowedTransitionsArray) => {
       insist(allowedTransitions.get(state).includes(nextState));
       state = nextState;
     },
-    getState: _ => state,
+    getStatus: _ => state,
   });
 };
 harden(makeStateMachine);
