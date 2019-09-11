@@ -2,7 +2,7 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../../core/zoe/zoe';
-import { makeSwap } from '../../../../core/zoe/zoeMiddle';
+import { makeSwap } from '../../../../core/zoe/zoeSwapMiddle';
 import { swapSrcs } from '../../../../core/zoe/contracts/swap';
 import { makeMint } from '../../../../core/issuers';
 import { offerEqual } from '../../../../core/zoe/utils';
@@ -50,9 +50,11 @@ test('zoe.makeInstance with trivial middle layer and srcs', t => {
   }
 });
 
-test('zoe.makeInstance with swap', async t => {
+test.only('zoe.makeInstance with swap', async t => {
   try {
     const { issuers, mints, zoe, assays } = setup();
+    const seatIssuer = zoe.getSeatIssuer();
+    const escrowReceiptIssuer = zoe.getEscrowReceiptIssuer();
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(issuers[0].makeAmount(3));
@@ -67,13 +69,15 @@ test('zoe.makeInstance with swap', async t => {
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a swap instance
-    const zoeInstance = zoe.makeInstance(issuers);
-    const swap = makeSwap(zoeInstance, swapSrcs);
+    const { userFacet: zoeInstance, middleLayerFacet } = zoe.makeInstance(
+      issuers,
+    );
+    const swap = makeSwap(zoe, middleLayerFacet, swapSrcs);
 
     // The issuers are defined at this step
     t.deepEquals(swap.getIssuers(), issuers);
 
-    // 2: Alice initializes the swap with an initial offer
+    // 2: Alice escrows with the zoeInstance
     const aliceOffer = harden([
       {
         rule: 'haveExactly',
@@ -85,14 +89,24 @@ test('zoe.makeInstance with swap', async t => {
       },
     ]);
     const alicePayments = [aliceMoolaPayment, aliceSimoleanPayment];
+    const {
+      escrowReceipt: allegedAliceEscrowReceipt,
+      claimWinnings: aliceClaimWinnings,
+    } = await zoeInstance.escrow(aliceOffer, alicePayments);
+
+    // 3: Alice does a claimAll on the escrowReceipt payment
+    const aliceEscrowReceipt = await escrowReceiptIssuer.claimAll(
+      allegedAliceEscrowReceipt,
+    );
+
+    // 3: Alice initializes the swap with her escrow receipt
 
     // Alice gets two kinds of things back - invites (the ability to
     // make an offer) and a seat for herself (the right to claim after
     // an offer has been made). She gets a seat since she made an
     // offer. Bob gets an invite.
-    const { seat: aliceSeatPaymentP, invites } = await swap.init(
-      aliceOffer,
-      alicePayments,
+    const { outcome: aliceOutcome, invites } = await swap.init(
+      aliceEscrowReceipt,
     );
     const [bobInvitePayment] = invites;
 
@@ -142,18 +156,28 @@ test('zoe.makeInstance with swap', async t => {
     const bobInvite = await bobInvitePayment.unwrap();
     const bobPayments = [bobMoolaPayment, bobSimoleanPayment];
 
-    // 6: Bob makes his offer
-    const bobSeatPayment = await bobInvite.makeOffer(
-      bobIntendedOffer,
-      bobPayments,
+    // 6: Bob escrows
+    const {
+      escrowReceipt: allegedBobEscrowReceipt,
+      claimWinnings: bobClaimWinnings,
+    } = await zoeInstance.escrow(bobIntendedOffer, bobPayments);
+
+    // 7: Bob does a claimAll on the escrowReceipt payment
+    const bobEscrowReceipt = await escrowReceiptIssuer.claimAll(
+      allegedBobEscrowReceipt,
     );
 
-    // 7: Alice unwraps the seatPayment to get her seat
-    const aliceSeatPayment = await aliceSeatPaymentP;
-    const aliceSeat = await aliceSeatPayment.unwrap();
+    // 8: Bob makes an offer with his escrow receipt
+    const bobOutcome = await bobInvite.makeOffer(bobEscrowReceipt);
 
-    // 8: Bob unwraps the seatPayment to get his seat
-    const bobSeat = await bobSeatPayment.unwrap();
+    t.equals(bobOutcome, 'offer successfully made');
+    t.equals(await aliceOutcome, 'offer successfully made');
+
+    // 7: Alice unwraps the claimWinnings to get her seat
+    const aliceSeat = await aliceClaimWinnings.unwrap();
+
+    // 8: Bob unwraps his claimWinnings to get his seat
+    const bobSeat = await bobClaimWinnings.unwrap();
 
     // 9: Alice claims her portion of the outcome (what Bob paid in)
     const aliceResult = await aliceSeat.getWinnings();

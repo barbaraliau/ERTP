@@ -4,8 +4,6 @@ import { makeSeatConfigMaker } from './seatConfig';
 import { makeMint } from '../issuers';
 
 const makeSeatMint = () => {
-  // TODO: Make a weakmap so unused ones can be garbage collected
-  // ids are a communication channel
   const idObjsToSeats = new WeakMap();
 
   const getNewIdObj = () => harden({});
