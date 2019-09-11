@@ -85,7 +85,7 @@ test('seatMint', async t => {
 
   const purse1Quantity = harden({
     src: 'swap',
-    id: 1,
+    id: harden({}),
     offerToBeMade: [
       { rule: 'haveExactly', amount: assays[0].make(8) },
       { rule: 'wantExactly', amount: assays[1].make(6) },
@@ -106,7 +106,7 @@ test('seatMint', async t => {
 
   const purse2Quantity = harden({
     src: 'swap',
-    id: 2,
+    id: harden({}),
     offerMade: [
       { rule: 'haveExactly', amount: assays[0].make(8) },
       { rule: 'wantExactly', amount: assays[1].make(6) },

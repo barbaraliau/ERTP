@@ -98,20 +98,17 @@ test('zoe.makeInstance with swap', async t => {
 
     // Check that the issuers and bobInvitePayment are as expected
     t.deepEquals(swap.getIssuers(), issuers);
-    t.deepEquals(bobInvitePayment.getBalance().quantity, {
-      src: 'swap',
-      id: 0,
-      offerToBeMade: [
-        {
-          rule: 'wantExactly',
-          amount: issuers[0].makeAmount(3),
-        },
-        {
-          rule: 'haveExactly',
-          amount: issuers[1].makeAmount(7),
-        },
-      ],
-    });
+    t.deepEquals(bobInvitePayment.getBalance().quantity.src, 'swap');
+    t.deepEquals(bobInvitePayment.getBalance().quantity.offerToBeMade, [
+      {
+        rule: 'wantExactly',
+        amount: issuers[0].makeAmount(3),
+      },
+      {
+        rule: 'haveExactly',
+        amount: issuers[1].makeAmount(7),
+      },
+    ]);
 
     // 3: Imagine that Alice sends the invite to Bob (not done here
     // since this test doesn't actually have separate vats/parties)
@@ -137,6 +134,8 @@ test('zoe.makeInstance with swap', async t => {
         bobIntendedOffer,
       ),
     );
+
+    t.equal(bobInvitePayment.getBalance().quantity.src, 'swap');
 
     // 5: Only after assaying the invite does he unwrap it (destroying
     // the ERTP invite) and accept it
@@ -241,20 +240,17 @@ test('zoe.install(swapSrcs) but Alice cancels before bob claims', async t => {
 
     // Check that the issuers and bobInvitePayment are as expected
     t.deepEquals(swap.getIssuers(), issuers);
-    t.deepEquals(bobInvitePayment.getBalance().quantity, {
-      src: 'swap',
-      id: 0,
-      offerToBeMade: [
-        {
-          rule: 'wantExactly',
-          amount: issuers[0].makeAmount(3),
-        },
-        {
-          rule: 'haveExactly',
-          amount: issuers[1].makeAmount(7),
-        },
-      ],
-    });
+    t.deepEquals(bobInvitePayment.getBalance().quantity.src, 'swap');
+    t.deepEquals(bobInvitePayment.getBalance().quantity.offerToBeMade, [
+      {
+        rule: 'wantExactly',
+        amount: issuers[0].makeAmount(3),
+      },
+      {
+        rule: 'haveExactly',
+        amount: issuers[1].makeAmount(7),
+      },
+    ]);
 
     // 3: Imagine that Alice sends the invite to Bob (not done here
     // since this test doesn't actually have separate vats/parties)
@@ -280,6 +276,7 @@ test('zoe.install(swapSrcs) but Alice cancels before bob claims', async t => {
         bobIntendedOffer,
       ),
     );
+    t.equal(bobInvitePayment.getBalance().quantity.src, 'swap');
 
     // 5: Only after assaying the invite does he unwrap it (destroying
     // the ERTP invite) and accept it

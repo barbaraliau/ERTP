@@ -5,7 +5,7 @@ import makePromise from '../../util/makePromise';
 import { makeStateMachine } from './stateMachine';
 
 const makeSwap = (zoeInstance, govC) => {
-  const { getNextSeatId, seatMint, addUseObj } = zoeInstance.getSeatMint();
+  const { getNewIdObj, seatMint, addUseObj } = zoeInstance.getSeatMint();
 
   const allowedTransitions = [
     ['open', ['closed', 'cancelled']],
@@ -44,7 +44,7 @@ const makeSwap = (zoeInstance, govC) => {
 
       const quantity = harden({
         src: govC.name,
-        id: getNextSeatId(),
+        id: getNewIdObj(),
         offerMade: offerDescMade,
       });
       const payment = seatMint.mint(quantity);
@@ -86,7 +86,7 @@ const makeSwap = (zoeInstance, govC) => {
       const invites = wantedOffers.map(offer => {
         const quantity = harden({
           src: govC.name,
-          id: getNextSeatId(),
+          id: getNewIdObj(),
           offerToBeMade: offer,
         });
         addUseObj(quantity.id, harden({ makeOffer: makeOfferMaker(offer) }));

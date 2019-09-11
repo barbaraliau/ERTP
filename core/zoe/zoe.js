@@ -10,7 +10,7 @@ import { makeSeatMint } from './seatMint';
 
 const makeZoe = () => {
   // The seat issuer is a long lived identity over many contract installations
-  const { getNextSeatId, seatMint, seatIssuer, addUseObj } = makeSeatMint();
+  const { getNewIdObj, seatMint, seatIssuer, addUseObj } = makeSeatMint();
 
   return harden({
     makeInstance: issuers => {
@@ -91,7 +91,7 @@ const makeZoe = () => {
           (state && state.issuers && state.issuers.slice()) || undefined,
         getSeatMint: _ =>
           harden({
-            getNextSeatId,
+            getNewIdObj,
             seatMint,
             seatIssuer,
             addUseObj,

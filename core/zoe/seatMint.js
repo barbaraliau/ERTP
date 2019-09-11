@@ -6,21 +6,16 @@ import { makeMint } from '../issuers';
 const makeSeatMint = () => {
   // TODO: Make a weakmap so unused ones can be garbage collected
   // ids are a communication channel
-  const idsToSeats = new Map();
-  let nextSeatId = 0;
+  const idObjsToSeats = new WeakMap();
 
-  const getNextSeatId = () => {
-    const id = nextSeatId;
-    nextSeatId += 1;
-    return id;
-  };
+  const getNewIdObj = () => harden({});
 
-  const addUseObj = (id, useObj) => {
-    idsToSeats.set(id, useObj);
+  const addUseObj = (idObj, useObj) => {
+    idObjsToSeats.set(idObj, useObj);
   };
 
   const makeUseObj = seatQuantity => {
-    return harden(idsToSeats.get(seatQuantity.id));
+    return harden(idObjsToSeats.get(seatQuantity.id));
   };
 
   // I'm not happy with this ducktyping but the alternative is having
@@ -46,7 +41,7 @@ const makeSeatMint = () => {
   const seatIssuer = seatMint.getIssuer();
 
   return {
-    getNextSeatId,
+    getNewIdObj,
     seatMint,
     seatIssuer,
     addUseObj,

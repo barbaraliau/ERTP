@@ -1,5 +1,4 @@
 import harden from '@agoric/harden';
-import Nat from '@agoric/nat';
 import { passStyleOf } from '@agoric/marshal';
 
 import { insist } from '../../util/insist';
@@ -38,7 +37,11 @@ const insistSeat = seat => {
     properties.includes('offerToBeMade') || properties.includes('offerMade'),
   )`must include 'offerToBeMade' or 'offerMade'`;
   insist(isContractName(seat.src))`'src' is not a contract name`;
-  Nat(seat.id);
+  insist(
+    passStyleOf(seat.id) === 'presence' &&
+      Object.entries(seat.id).length === 0 &&
+      seat.id.constructor === Object,
+  )`id should be an empty object`;
   insist(
     passStyleOf(seat.offerToBeMade) === 'copyArray' ||
       passStyleOf(seat.offerMade) === 'copyArray',
