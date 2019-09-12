@@ -46,9 +46,6 @@ test.only('zoe.makeInstance with simpleSwap', async t => {
     );
     const simpleSwap = makeSimpleSwap(middleLayerFacet);
 
-    // The issuers are defined at this step
-    t.deepEquals(simpleSwap.getIssuers(), issuers);
-
     // 2: Alice escrows with the zoeInstance
     const aliceOfferDesc = harden([
       {
@@ -77,7 +74,9 @@ test.only('zoe.makeInstance with simpleSwap', async t => {
     // make an offer) and a seat for herself (the right to claim after
     // an offer has been made). She gets a seat since she made an
     // offer. Bob gets an invite.
-    const aliceOfferMadeDesc = await simpleSwap.makeOffer(aliceEscrowReceipt);
+    const { offerMade: aliceOfferMadeDesc } = await simpleSwap.makeOffer(
+      aliceEscrowReceipt,
+    );
 
     // 3: Imagine that Bob also has access to the escrowReceiptIssuer
     // and the automaticRefund
@@ -109,10 +108,12 @@ test.only('zoe.makeInstance with simpleSwap', async t => {
     );
 
     // 8: Bob makes an offer with his escrow receipt
-    const bobOfferMadeDesc = await simpleSwap.makeOffer(bobEscrowReceipt);
+    const { offerMade: bobOfferMadeDesc } = await simpleSwap.makeOffer(
+      bobEscrowReceipt,
+    );
 
-    t.equals(bobOfferMadeDesc, bobOfferDesc);
-    t.equals(aliceOfferMadeDesc, aliceOfferDesc);
+    t.equals(await bobOfferMadeDesc, bobOfferDesc);
+    t.equals(await aliceOfferMadeDesc, aliceOfferDesc);
 
     // 7: Alice unwraps the claimWinnings to get her seat
     const aliceSeat = await aliceClaimWinnings.unwrap();

@@ -11,7 +11,8 @@ import { makeEscrowReceiptConfig } from './escrowReceiptConfig';
 import { makeMint } from '../issuers';
 
 const makeZoe = () => {
-  // The seat issuer is a long lived identity over many contract installations
+  // The seatIssuer and escrowReceiptIssuer are long lived identities
+  // over many contract installations
   const { getNewIdObj, seatMint, seatIssuer, addUseObj } = makeSeatMint();
   const escrowReceiptMint = makeMint(
     'zoeEscrowReceipts',
@@ -78,11 +79,6 @@ const makeZoe = () => {
               quantity,
             );
           });
-          state.quantities.push(quantitiesForPlayer);
-
-          // keep the valid offer
-          state.offerDescs.push(offerDesc);
-          state.results.push(result);
 
           const escrowReceiptQuantity = harden({
             id: harden({}),
@@ -105,6 +101,10 @@ const makeZoe = () => {
           addUseObj(claimWinningsQuantity.id, seat);
           const claimWinningsPaymentP = claimWinningsPurseP.withdrawAll();
 
+          state.addQuantity(escrowReceiptQuantity.id, quantitiesForPlayer);
+          state.addOfferDesc(escrowReceiptQuantity.id, offerDesc);
+          state.addResult(escrowReceiptQuantity.id, result);
+
           return {
             escrowReceipt: escrowReceiptPaymentP,
             claimWinnings: claimWinningsPaymentP,
@@ -114,7 +114,8 @@ const makeZoe = () => {
 
       const middleLayerFacet = harden({
         // reallocation is a quantitiesMatrix
-        allocate: reallocation => {
+        allocate: (offerIds, reallocation) => {
+          const offerDescs = state.getOfferDescsFor(offerIds);
           insist(
             areRightsConserved(
               state.strategies,
@@ -125,18 +126,19 @@ const makeZoe = () => {
 
           const amounts = toAmountMatrix(state.assays, reallocation);
           insist(
-            isOfferSafeForAll(state.assays, state.offerDescs, amounts),
+            isOfferSafeForAll(state.assays, offerDescs, amounts),
           )`The proposed reallocation was not offer safe`;
 
           const payments = makePayments(amounts);
-          state.results.map((result, i) => result.res(payments[i]));
-          // clear state
-          state = makeState(state.issuers);
+          const results = state.getResultsFor(offerIds);
+          results.map((result, i) => result.res(payments[i]));
+          // delete offerIds after those offers have been allocated
+          state.removeOffers(offerIds);
         },
         getIssuers: _ =>
           (state && state.issuers && state.issuers.slice()) || undefined,
         getAssays: _ => state.assays,
-        getQuantities: _ => state.quantities,
+        getQuantitiesFor: state.getQuantitiesFor,
         getOffers: _ => state.offerDescs,
         getSeatIssuer: () => seatIssuer,
         getEscrowReceiptIssuer: () => escrowReceiptIssuer,
