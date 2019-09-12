@@ -50,7 +50,7 @@ test('zoe.makeInstance with trivial middle layer and srcs', t => {
   }
 });
 
-test.only('zoe.makeInstance with swap', async t => {
+test('zoe.makeInstance with swap', async t => {
   try {
     const { issuers, mints, zoe, assays } = setup();
     const seatIssuer = zoe.getSeatIssuer();

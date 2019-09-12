@@ -21,7 +21,7 @@ const makeZoe = () => {
 
   return harden({
     makeInstance: issuers => {
-      const state = makeState(issuers);
+      let state = makeState(issuers);
 
       function toAmountMatrix(assays, quantitiesMatrix) {
         const assayMakes = assays.map(assay => assay.make);
@@ -130,12 +130,16 @@ const makeZoe = () => {
 
           const payments = makePayments(amounts);
           state.results.map((result, i) => result.res(payments[i]));
+          // clear state
+          state = makeState(state.issuers);
         },
         getIssuers: _ =>
           (state && state.issuers && state.issuers.slice()) || undefined,
         getAssays: _ => state.assays,
         getQuantities: _ => state.quantities,
         getOffers: _ => state.offerDescs,
+        getSeatIssuer: () => seatIssuer,
+        getEscrowReceiptIssuer: () => escrowReceiptIssuer,
       });
       return { userFacet, middleLayerFacet };
     },
