@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 import { passStyleOf } from '@agoric/marshal';
 
 import { insist } from '../../../util/insist';
-import { makeUniStrategy } from './seatUniStrategy';
+import { makeUniStrategy } from '../../config/strategies/uniStrategy';
 
 // quantity = {
 //   src: 'swap',
