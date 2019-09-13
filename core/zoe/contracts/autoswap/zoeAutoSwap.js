@@ -4,7 +4,7 @@ import { insist } from '../../../../util/insist';
 import makePromise from '../../../../util/makePromise';
 
 import { isOfferSafeForAll, areRightsConserved } from '../../isOfferSafe';
-import { mapArrayOnMatrix, transpose } from '../../utils';
+import { mapArrayOnMatrix } from '../../utils';
 
 import { makeState } from '../../state';
 import { makeSeatMint } from '../../seatMint';

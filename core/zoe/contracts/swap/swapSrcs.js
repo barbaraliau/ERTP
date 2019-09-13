@@ -5,7 +5,7 @@ import {
   makeHasOkRules,
   hasOkIssuers,
   offerEqual,
-} from '../utils';
+} from '../../utils';
 
 const hasOkLength = makeHasOkLength(2);
 const hasOkRules = makeHasOkRules([
@@ -37,7 +37,7 @@ const swapSrcs = harden({
     harden([makeSecondOffer(firstOfferDesc)]),
   isValidOfferDesc: (assays, offerDescToBeMade, offerDescMade) =>
     offerEqual(assays, offerDescToBeMade, offerDescMade),
-  canReallocate: offerDescs => offerDescs.length === 2, // we can reallocate with 2 valid offers
+  canReallocate: offerIds => offerIds.length === 2, // we can reallocate with 2 valid offers
   reallocate: allocations => harden([allocations[1], allocations[0]]),
 });
 

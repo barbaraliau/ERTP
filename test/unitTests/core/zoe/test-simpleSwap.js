@@ -23,7 +23,7 @@ const setup = () => {
   });
 };
 
-test.only('zoe.makeInstance with simpleSwap', async t => {
+test('zoe.makeInstance with simpleSwap', async t => {
   try {
     const { issuers, mints, zoe } = setup();
     const escrowReceiptIssuer = zoe.getEscrowReceiptIssuer();
@@ -40,11 +40,11 @@ test.only('zoe.makeInstance with simpleSwap', async t => {
     const bobSimoleanPurse = mints[1].mint(issuers[1].makeAmount(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
-    // 1: A smart contract creates an automatic refund instance
-    const { userFacet: zoeInstance, middleLayerFacet } = zoe.makeInstance(
+    // 1: Alice creates a simpleSwap instance
+    const { zoeInstance, governingContract: simpleSwap } = zoe.makeInstance(
+      makeSimpleSwap,
       issuers,
     );
-    const simpleSwap = makeSimpleSwap(middleLayerFacet);
 
     // 2: Alice escrows with the zoeInstance
     const aliceOfferDesc = harden([

@@ -1,7 +1,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { swapSrcs } from '../../../../core/zoe/contracts/swap';
+import { swapSrcs } from '../../../../core/zoe/contracts/swap/swapSrcs';
 import { makeMint } from '../../../../core/issuers';
 
 test('swap.areIssuersValid', t => {

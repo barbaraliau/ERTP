@@ -4,7 +4,6 @@ import harden from '@agoric/harden';
 import { makeZoe } from '../../../../core/zoe/contracts/autoswap/zoeAutoSwap';
 import { autoswapSrcs } from '../../../../core/zoe/contracts/autoswap/autoswap';
 import { makeMint } from '../../../../core/issuers';
-import { offerEqual } from '../../../../core/zoe/utils';
 
 const setup = () => {
   const moolaMint = makeMint('moola');
@@ -26,7 +25,7 @@ const setup = () => {
 
 test.skip('zoe.install(autoswapSrcs) with valid offers', async t => {
   try {
-    const { issuers, mints, zoe, assays } = setup();
+    const { issuers, mints, zoe } = setup();
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(issuers[0].makeAmount(10));
@@ -39,7 +38,9 @@ test.skip('zoe.install(autoswapSrcs) with valid offers', async t => {
     const bobMoolaPurse = mints[0].mint(issuers[0].makeAmount(2));
     const bobMoolaPayment = bobMoolaPurse.withdrawAll();
     const bobSimoleanPurse = mints[1].mint(issuers[1].makeAmount(7));
-    const bobSimoleanPayment = bobSimoleanPurse.withdraw(issuers[1].makeAmount(3));
+    const bobSimoleanPayment = bobSimoleanPurse.withdraw(
+      issuers[1].makeAmount(3),
+    );
 
     // 1: Alice creates an autoswap instance
     const autoswap = zoe.install(autoswapSrcs);
@@ -160,7 +161,6 @@ test.skip('zoe.install(autoswapSrcs) with valid offers', async t => {
 
     // 8: Alice removes some of her liquidity
     // TODO
-    
   } catch (e) {
     t.assert(false, e);
     console.log(e);

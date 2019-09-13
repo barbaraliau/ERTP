@@ -41,13 +41,13 @@ test('zoe.makeInstance with automaticRefund', async t => {
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // 1: A smart contract creates an automatic refund instance
-    const { userFacet: zoeInstance, middleLayerFacet } = zoe.makeInstance(
-      issuers,
-    );
-    const automaticRefund = makeAutomaticRefund(middleLayerFacet);
+    const {
+      zoeInstance,
+      governingContract: automaticRefund,
+    } = zoe.makeInstance(makeAutomaticRefund, issuers);
 
     // The issuers are defined at this step
-    t.deepEquals(automaticRefund.getIssuers(), issuers);
+    t.deepEquals(zoeInstance.getIssuers(), issuers);
 
     // 2: Alice escrows with the zoeInstance
     const aliceOfferDesc = harden([

@@ -21,8 +21,8 @@ const makeZoe = () => {
   const escrowReceiptIssuer = escrowReceiptMint.getIssuer();
 
   return harden({
-    makeInstance: issuers => {
-      let state = makeState(issuers);
+    makeInstance: (makeContract, issuers) => {
+      const state = makeState(issuers);
 
       function toAmountMatrix(assays, quantitiesMatrix) {
         const assayMakes = assays.map(assay => assay.make);
@@ -31,7 +31,14 @@ const makeZoe = () => {
 
       function makePayments(amountsMatrix) {
         return amountsMatrix.map(row =>
-          row.map((amount, i) => state.purses[i].withdraw(amount, 'payout')),
+          row.map((amount, i) => {
+            const payment = state.purses[i].withdraw(amount, 'payout');
+            state.purseQuantities[i] = state.strategies[i].without(
+              state.purseQuantities[i],
+              amount.quantity,
+            );
+            return payment;
+          }),
         );
       }
 
@@ -110,12 +117,19 @@ const makeZoe = () => {
             claimWinnings: claimWinningsPaymentP,
           };
         },
+        getIssuers: _ =>
+          (state && state.issuers && state.issuers.slice()) || undefined,
       });
 
-      const middleLayerFacet = harden({
+      const governingContractFacet = harden({
         // reallocation is a quantitiesMatrix
+        // call this reallocation
         allocate: (offerIds, reallocation) => {
           const offerDescs = state.getOfferDescsFor(offerIds);
+
+          // TODO: figure out how to handle rights conservation when
+          // you have purse quantities that are carried over, as in
+          // the case of uniswap.
           insist(
             areRightsConserved(
               state.strategies,
@@ -143,7 +157,12 @@ const makeZoe = () => {
         getSeatIssuer: () => seatIssuer,
         getEscrowReceiptIssuer: () => escrowReceiptIssuer,
       });
-      return { userFacet, middleLayerFacet };
+
+      const governingContract = makeContract(governingContractFacet);
+      return harden({
+        zoeInstance: userFacet,
+        governingContract,
+      });
     },
     getSeatIssuer: () => seatIssuer,
     getEscrowReceiptIssuer: () => escrowReceiptIssuer,

@@ -1,13 +1,28 @@
 import harden from '@agoric/harden';
 
-import { insist } from '../../util/insist';
-import makePromise from '../../util/makePromise';
-import { makeStateMachine } from './stateMachine';
-import { makeSeatMint } from './seatMint';
+import { insist } from '../../../../util/insist';
+import makePromise from '../../../../util/makePromise';
+import { makeStateMachine } from '../../stateMachine';
+import { makeSeatMint } from '../../seatMint';
 
-const makeSwap = (zoe, zoeInstance, govC) => {
+const makeSwapMaker = govC => zoeInstance => {
+  const makeOfferKeeper = () => {
+    const validOfferIdsToDescs = new WeakMap();
+    const validOfferIds = [];
+    return harden({
+      keepOffer: (offerId, offerDesc) => {
+        validOfferIdsToDescs.set(offerId, offerDesc);
+        validOfferIds.push(offerId);
+      },
+      getOffer: offerId => validOfferIdsToDescs.get(offerId),
+      getValidOfferIds: () => validOfferIds,
+    });
+  };
+
+  const { keepOffer, getValidOfferIds } = makeOfferKeeper();
+
   const { seatMint, seatIssuer, addUseObj } = makeSeatMint();
-  const escrowReceiptIssuer = zoe.getEscrowReceiptIssuer();
+  const escrowReceiptIssuer = zoeInstance.getEscrowReceiptIssuer();
 
   const allowedTransitions = [
     ['open', ['closed', 'cancelled']],
@@ -17,14 +32,13 @@ const makeSwap = (zoe, zoeInstance, govC) => {
 
   const sm = makeStateMachine('open', allowedTransitions);
 
-  // Offer description
   const makeOfferMaker = offerToBeMadeDesc => {
     const makeOffer = async escrowReceipt => {
       const offerResult = makePromise();
       // we will either drop this purse or withdraw from it to give a refund
       const escrowReceiptPurse = escrowReceiptIssuer.makeEmptyPurse();
       const amount = await escrowReceiptPurse.depositAll(escrowReceipt);
-      const { offerMade: offerMadeDesc } = amount.quantity;
+      const { id, offerMade: offerMadeDesc } = amount.quantity;
       if (sm.getStatus() !== 'open') {
         offerResult.rej('swap was cancelled');
         return offerResult.p;
@@ -44,12 +58,16 @@ const makeSwap = (zoe, zoeInstance, govC) => {
         // TODO: refund?
       }
 
-      if (
-        sm.canTransitionTo('closed') &&
-        govC.canReallocate(zoeInstance.getOffers())
-      ) {
+      // keep valid offer
+      keepOffer(id, offerMadeDesc);
+      const validIds = getValidOfferIds();
+
+      if (sm.canTransitionTo('closed') && govC.canReallocate(validIds)) {
         sm.transitionTo('closed');
-        zoeInstance.allocate(govC.reallocate(zoeInstance.getQuantities()));
+        zoeInstance.allocate(
+          validIds,
+          govC.reallocate(zoeInstance.getQuantitiesFor(validIds)),
+        );
       }
       offerResult.res('offer successfully made');
       return offerResult.p;
@@ -97,4 +115,4 @@ const makeSwap = (zoe, zoeInstance, govC) => {
   });
   return institution;
 };
-export { makeSwap };
+export { makeSwapMaker };
