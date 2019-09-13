@@ -262,10 +262,10 @@ test(`areRightsConserved - true for nat quantities`, t => {
   try {
     const { issuers } = setup();
     const strategies = issuers.map(issuer => issuer.getStrategy());
-    const purseQuantities = [10, 5, 0];
-    const quantitiesMatrix = [[1, 2, 0], [3, 1, 0], [6, 2, 0]];
+    const oldQuantities = [[0, 1, 0], [4, 1, 0], [6, 3, 0]];
+    const newQuantities = [[1, 2, 0], [3, 1, 0], [6, 2, 0]];
 
-    t.ok(areRightsConserved(strategies, purseQuantities, quantitiesMatrix));
+    t.ok(areRightsConserved(strategies, oldQuantities, newQuantities));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -278,10 +278,10 @@ test(`areRightsConserved - false for nat quantities`, t => {
   try {
     const { issuers } = setup();
     const strategies = issuers.map(issuer => issuer.getStrategy());
-    const purseQuantities = [10, 6, 0];
-    const quantitiesMatrix = [[1, 2, 0], [3, 1, 0], [6, 2, 0]];
+    const oldQuantities = [[0, 1, 4], [4, 1, 0], [6, 3, 0]];
+    const newQuantities = [[1, 2, 0], [3, 1, 0], [6, 2, 0]];
 
-    t.notOk(areRightsConserved(strategies, purseQuantities, quantitiesMatrix));
+    t.notOk(areRightsConserved(strategies, oldQuantities, newQuantities));
   } catch (e) {
     t.assert(false, e);
   } finally {

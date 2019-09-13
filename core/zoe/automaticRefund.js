@@ -11,7 +11,8 @@ const makeAutomaticRefund = zoeInstance => {
       const { id, offerMade } = amount.quantity;
       const offerIds = harden([id]);
       const quantities = zoeInstance.getQuantitiesFor(offerIds);
-      zoeInstance.allocate(offerIds, quantities);
+      zoeInstance.reallocate(offerIds, quantities);
+      zoeInstance.eject(offerIds);
       return offerMade;
     },
   });

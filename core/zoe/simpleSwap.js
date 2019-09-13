@@ -65,7 +65,8 @@ const makeSimpleSwap = zoeInstance => {
       validOfferIds.push(id);
       const quantities = zoeInstance.getQuantitiesFor(validOfferIds);
       if (validOfferIds.length === 2) {
-        zoeInstance.allocate(validOfferIds, reallocate(quantities));
+        zoeInstance.reallocate(validOfferIds, reallocate(quantities));
+        zoeInstance.eject(validOfferIds);
       }
       status.res(offerMadeDesc);
       return {

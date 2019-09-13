@@ -82,28 +82,34 @@ function isOfferSafeForAll(assays, offerMatrix, amountMatrix) {
     })
     .reduce(allTrue);
 }
+// The columns in a quantitiesMatrix are per issuer, and the rows
+// are per player. We want to transpose the matrix such that each
+// row is per issuer so we can do 'with' on the array to get a total
+// per issuer and make sure the rights are conserved.
+const sumByIssuer = (strategies, quantities) =>
+  transpose(quantities).map((quantitiesPerIssuer, i) => {
+    return quantitiesPerIssuer.reduce(strategies[i].with);
+  });
+
+const isEqualPerIssuer = (strategies, leftQuantities, rightQuantities) =>
+  leftQuantities
+    .map((leftQ, i) => strategies[i].equals(leftQ, rightQuantities[i]))
+    .reduce(allTrue);
+
 /**
  * @param  {array} strategies - the strategies per issuer, in the same
  * order as the corresponding issuers array.
- * @param  {array} purseQuantities - the quantities per purse, in the
- * same order as the corresponding issuers array.
- * @param  {matrix} quantitiesMatrix - array of arrays where the
+ * @param  {matrix} previousQuantities - array of arrays where the
+ * element array is the quantities for a particular player, per
+ * issuer.
+ * @param  {matrix} newQuantities - array of arrays where the
  * element array is the quantities for a particular player, per
  * issuer.
  */
-function areRightsConserved(strategies, purseQuantities, quantitiesMatrix) {
-  // The columns in a quantitiesMatrix are per issuer, and the rows
-  // are per player. We want to transpose the matrix such that each
-  // row is per issuer so we can do 'with' on the array to get a total
-  // per issuer and make sure the rights are conserved.
-  const transposedQuantities = transpose(quantitiesMatrix);
-  const totalsPerIssuer = transposedQuantities.map((quantitiesPerIssuer, i) => {
-    return quantitiesPerIssuer.reduce(strategies[i].with);
-  });
-  const equalPerIssuer = totalsPerIssuer.map((total, i) =>
-    strategies[i].equals(total, purseQuantities[i]),
-  );
-  return equalPerIssuer.reduce(allTrue);
+function areRightsConserved(strategies, prevQuantities, newQuantities) {
+  const sumsPrevQuantities = sumByIssuer(strategies, prevQuantities);
+  const sumsNewQuantities = sumByIssuer(strategies, newQuantities);
+  return isEqualPerIssuer(strategies, sumsPrevQuantities, sumsNewQuantities);
 }
 
 export { isOfferSafeForPlayer, isOfferSafeForAll, areRightsConserved };

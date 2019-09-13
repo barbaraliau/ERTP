@@ -124,25 +124,26 @@ const makeZoe = () => {
       const governingContractFacet = harden({
         // reallocation is a quantitiesMatrix
         // call this reallocation
-        allocate: (offerIds, reallocation) => {
+        reallocate: (offerIds, reallocation) => {
           const offerDescs = state.getOfferDescsFor(offerIds);
-
-          // TODO: figure out how to handle rights conservation when
-          // you have purse quantities that are carried over, as in
-          // the case of uniswap.
+          const currentQuantities = state.getQuantitiesFor(offerIds);
           insist(
             areRightsConserved(
               state.strategies,
-              state.purseQuantities,
+              currentQuantities,
               reallocation,
             ),
           )`Rights are not conserved in the proposed reallocation`;
-
           const amounts = toAmountMatrix(state.assays, reallocation);
           insist(
             isOfferSafeForAll(state.assays, offerDescs, amounts),
           )`The proposed reallocation was not offer safe`;
-
+          // save the reallocation
+          state.setQuantitiesFor(offerIds, reallocation);
+        },
+        eject: offerIds => {
+          const quantities = state.getQuantitiesFor(offerIds);
+          const amounts = toAmountMatrix(state.assays, quantities);
           const payments = makePayments(amounts);
           const results = state.getResultsFor(offerIds);
           results.map((result, i) => result.res(payments[i]));

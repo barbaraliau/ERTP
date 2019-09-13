@@ -64,10 +64,11 @@ const makeSwapMaker = govC => zoeInstance => {
 
       if (sm.canTransitionTo('closed') && govC.canReallocate(validIds)) {
         sm.transitionTo('closed');
-        zoeInstance.allocate(
+        zoeInstance.reallocate(
           validIds,
           govC.reallocate(zoeInstance.getQuantitiesFor(validIds)),
         );
+        zoeInstance.eject(validIds);
       }
       offerResult.res('offer successfully made');
       return offerResult.p;

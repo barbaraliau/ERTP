@@ -3,11 +3,13 @@ const makeState = issuers => {
   const offerDescs = new WeakMap();
   const results = new WeakMap();
 
+  const strategies = issuers.map(issuer => issuer.getStrategy());
+
   const state = {
     status: 'initialized',
     issuers,
     assays: issuers.map(issuer => issuer.getAssay()),
-    strategies: issuers.map(issuer => issuer.getStrategy()),
+    strategies,
     purses: issuers.map(issuer => issuer.makeEmptyPurse()),
   };
   state.purseQuantities = state.strategies.map(strategy => strategy.empty());
@@ -17,6 +19,8 @@ const makeState = issuers => {
     offerDescs.set(offerId, offerDesc);
   state.addResult = (offerId, result) => results.set(offerId, result);
   state.getQuantitiesFor = objIds => objIds.map(objId => quantities.get(objId));
+  state.setQuantitiesFor = (objIds, reallocation) =>
+    objIds.map((objId, i) => quantities.set(objId, reallocation[i]));
   state.getOfferDescsFor = objIds => objIds.map(objId => offerDescs.get(objId));
   state.getResultsFor = objIds => objIds.map(objId => results.get(objId));
   state.removeOffers = objIds => {
