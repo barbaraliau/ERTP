@@ -1,4 +1,4 @@
-import { operations } from '../../operations';
+import { operations } from './operations';
 
 const { add, subtract, mult, divide } = operations;
 

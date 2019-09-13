@@ -1,8 +1,8 @@
 import harden from '@agoric/harden';
 import { passStyleOf } from '@agoric/marshal';
 
-import { insist } from '../../util/insist';
-import { makeUniStrategy } from './seatUniStrategy';
+import { insist } from '../../../util/insist';
+import { makeUniStrategy } from '../seatIssuer/seatUniStrategy';
 
 // quantity = {
 //   id: 2,

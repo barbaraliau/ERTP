@@ -1,9 +1,9 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { makeSeatConfigMaker } from '../../../../core/zoe/seatConfig';
+import { makeSeatConfigMaker } from '../../../../core/zoe/seatIssuer/seatConfig';
 import { makeMint } from '../../../../core/issuers';
-import { offerEqual } from '../../../../core/zoe/utils';
+import { offerEqual } from '../../../../core/zoe/utils/utils';
 import { insist } from '../../../../util/insist';
 
 // quantity = {

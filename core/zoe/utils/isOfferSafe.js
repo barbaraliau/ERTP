@@ -1,5 +1,5 @@
 import { allTrue, transpose } from './utils';
-import { insist } from '../../util/insist';
+import { insist } from '../../../util/insist';
 
 /**
  * @param  {array} assaysPerIssuer - an array of assays ordered in the

@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 
 import { makeSeatConfigMaker } from './seatConfig';
-import { makeMint } from '../issuers';
+import { makeMint } from '../../issuers';
 
 const makeSeatMint = () => {
   const idObjsToSeats = new WeakMap();

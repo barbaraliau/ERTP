@@ -5,7 +5,7 @@ import {
   isOfferSafeForPlayer,
   isOfferSafeForAll,
   areRightsConserved,
-} from '../../../../core/zoe/isOfferSafe';
+} from '../../../../core/zoe/utils/isOfferSafe';
 import { makeMint } from '../../../../core/issuers';
 
 const setup = () => {

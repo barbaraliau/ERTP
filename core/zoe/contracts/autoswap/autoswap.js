@@ -2,7 +2,11 @@ import harden from '@agoric/harden';
 import { reallocate } from './reallocate';
 import { calcSwap } from './calcSwap';
 
-import { makeHasOkLength, makeHasOkRules, hasOkIssuers } from '../../utils';
+import {
+  makeHasOkLength,
+  makeHasOkRules,
+  hasOkIssuers,
+} from '../../utils/utils';
 
 const hasOkLength = makeHasOkLength(3);
 const hasOkRules = makeHasOkRules([

@@ -5,7 +5,7 @@ import {
   makeHasOkRules,
   hasOkIssuers,
   offerEqual,
-} from '../../utils';
+} from '../../utils/utils';
 
 const hasOkLength = makeHasOkLength(2);
 const hasOkRules = makeHasOkRules([

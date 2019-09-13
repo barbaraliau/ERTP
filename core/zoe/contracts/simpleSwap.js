@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 
-import { makeHasOkRules, offerEqual } from './utils';
-import makePromise from '../../util/makePromise';
+import { makeHasOkRules, offerEqual } from '../utils/utils';
+import makePromise from '../../../util/makePromise';
 
 const makeSimpleSwap = zoeInstance => {
   const escrowReceiptIssuer = zoeInstance.getEscrowReceiptIssuer();

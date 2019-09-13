@@ -3,11 +3,11 @@ import harden from '@agoric/harden';
 import { insist } from '../../../../util/insist';
 import makePromise from '../../../../util/makePromise';
 
-import { isOfferSafeForAll, areRightsConserved } from '../../isOfferSafe';
-import { mapArrayOnMatrix } from '../../utils';
+import { isOfferSafeForAll, areRightsConserved } from '../../utils/isOfferSafe';
+import { mapArrayOnMatrix } from '../../utils/utils';
 
-import { makeState } from '../../state';
-import { makeSeatMint } from '../../seatMint';
+import { makeState } from '../../utils/state';
+import { makeSeatMint } from '../../seatIssuer/seatMint';
 import { makeMint } from '../../../issuers';
 
 const makeZoe = () => {

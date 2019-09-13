@@ -1,11 +1,11 @@
 import harden from '@agoric/harden';
 
-import { insist } from '../../util/insist';
+import { insist } from '../../../util/insist';
 import {
   sameStructure,
   mustBeSameStructure,
   mustBeComparable,
-} from '../../util/sameStructure';
+} from '../../../util/sameStructure';
 
 // The uniStrategy represents quantities that can never be combined.
 // For example, usually there is only one invite in an invite purse or

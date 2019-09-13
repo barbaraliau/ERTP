@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { passStyleOf } from '@agoric/marshal';
 
-import { insist } from '../../util/insist';
+import { insist } from '../../../util/insist';
 import { makeUniStrategy } from './seatUniStrategy';
 
 // quantity = {

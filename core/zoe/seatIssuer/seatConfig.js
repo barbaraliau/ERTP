@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { makeCoreMintKeeper } from '../config/coreMintKeeper';
+import { makeCoreMintKeeper } from '../../config/coreMintKeeper';
 import { seatStrategy } from './seatStrategy';
 
 /**

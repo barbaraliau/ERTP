@@ -2,7 +2,7 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../../core/zoe/zoe';
-import { makeAutomaticRefund } from '../../../../core/zoe/automaticRefund';
+import { makeAutomaticRefund } from '../../../../core/zoe/contracts/automaticRefund';
 import { makeMint } from '../../../../core/issuers';
 
 const setup = () => {

@@ -5,7 +5,7 @@ import { makeZoe } from '../../../../core/zoe/zoe';
 import { makeSwapMaker } from '../../../../core/zoe/contracts/swap/swap';
 import { swapSrcs } from '../../../../core/zoe/contracts/swap/swapSrcs';
 import { makeMint } from '../../../../core/issuers';
-import { offerEqual } from '../../../../core/zoe/utils';
+import { offerEqual } from '../../../../core/zoe/utils/utils';
 
 const setup = () => {
   const moolaMint = makeMint('moola');

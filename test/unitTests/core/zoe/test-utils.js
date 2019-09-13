@@ -1,13 +1,13 @@
 import { test } from 'tape-promise/tape';
 
-import { makeStateMachine } from '../../../../core/zoe/stateMachine';
+import { makeStateMachine } from '../../../../core/zoe/utils/stateMachine';
 
 import {
   allTrue,
   mapMatrix,
   transpose,
   mapArrayOnMatrix,
-} from '../../../../core/zoe/utils';
+} from '../../../../core/zoe/utils/utils';
 
 test('stateMachine', t => {
   try {

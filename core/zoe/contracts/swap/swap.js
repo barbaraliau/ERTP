@@ -2,8 +2,8 @@ import harden from '@agoric/harden';
 
 import { insist } from '../../../../util/insist';
 import makePromise from '../../../../util/makePromise';
-import { makeStateMachine } from '../../stateMachine';
-import { makeSeatMint } from '../../seatMint';
+import { makeStateMachine } from '../../utils/stateMachine';
+import { makeSeatMint } from '../../seatIssuer/seatMint';
 
 const makeSwapMaker = govC => zoeInstance => {
   const makeOfferKeeper = () => {
