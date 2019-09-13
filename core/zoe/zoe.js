@@ -22,7 +22,7 @@ const makeZoe = () => {
 
   return harden({
     makeInstance: (makeContract, issuers) => {
-      const state = makeState(issuers);
+      const { adminState, readOnlyState } = makeState(issuers);
 
       function toAmountMatrix(assays, quantitiesMatrix) {
         const assayMakes = assays.map(assay => assay.make);
@@ -32,24 +32,22 @@ const makeZoe = () => {
       function makePayments(amountsMatrix) {
         return amountsMatrix.map(row =>
           row.map((amount, i) => {
-            const payment = state.purses[i].withdraw(amount, 'payout');
-            state.purseQuantities[i] = state.strategies[i].without(
-              state.purseQuantities[i],
-              amount.quantity,
-            );
+            const payment = adminState
+              .getPurses()
+              [i].withdraw(amount, 'payout');
             return payment;
           }),
         );
       }
 
       const userFacet = harden({
-        // Escrow does the escrowing, but also updates the `purseQuantities`
-        // (the current balance of the purses) and `quantities` (the amount
-        // escrowed per player per issuer)
+        // Escrow sets the `quantities` (the amount escrowed per
+        // player per issuer)
         escrow: async (offerDesc, payments) => {
           const result = makePromise();
-          const quantitiesForPlayerPromises = state.purses.map(
-            async (purse, i) => {
+          const quantitiesForPlayerPromises = adminState
+            .getPurses()
+            .map(async (purse, i) => {
               // if the user's contractual understanding includes
               // "haveExactly", make sure that they have supplied the
               // coordinating payment
@@ -67,25 +65,19 @@ const makeZoe = () => {
               if (offerDesc[i].rule === 'haveAtLeast') {
                 const amount = await purse.depositAll(payments[i]);
                 insist(
-                  state.strategies[i].includes(amount, offerDesc[i].amount),
+                  readOnlyState.strategies[i].includes(
+                    amount,
+                    offerDesc[i].amount,
+                  ),
                 )`did not escrow enough to cover 'haveAtLeast'`;
                 return amount.quantity;
               }
-              return state.strategies[i].empty();
-            },
-          );
+              return readOnlyState.strategies[i].empty();
+            });
 
           const quantitiesForPlayer = await Promise.all(
             quantitiesForPlayerPromises,
           );
-          // has side-effects
-          // eslint-disable-next-line array-callback-return
-          quantitiesForPlayer.map((quantity, i) => {
-            state.purseQuantities[i] = state.strategies[i].with(
-              state.purseQuantities[i],
-              quantity,
-            );
-          });
 
           const escrowReceiptQuantity = harden({
             id: harden({}),
@@ -108,53 +100,51 @@ const makeZoe = () => {
           addUseObj(claimWinningsQuantity.id, seat);
           const claimWinningsPaymentP = claimWinningsPurseP.withdrawAll();
 
-          state.addQuantity(escrowReceiptQuantity.id, quantitiesForPlayer);
-          state.addOfferDesc(escrowReceiptQuantity.id, offerDesc);
-          state.addResult(escrowReceiptQuantity.id, result);
+          adminState.setQuantity(escrowReceiptQuantity.id, quantitiesForPlayer);
+          adminState.setOffer(escrowReceiptQuantity.id, offerDesc);
+          adminState.setResult(escrowReceiptQuantity.id, result);
 
           return {
             escrowReceipt: escrowReceiptPaymentP,
             claimWinnings: claimWinningsPaymentP,
           };
         },
-        getIssuers: _ =>
-          (state && state.issuers && state.issuers.slice()) || undefined,
+        getIssuers: _ => readOnlyState.issuers,
       });
 
       const governingContractFacet = harden({
         // reallocation is a quantitiesMatrix
         // call this reallocation
         reallocate: (offerIds, reallocation) => {
-          const offerDescs = state.getOfferDescsFor(offerIds);
-          const currentQuantities = state.getQuantitiesFor(offerIds);
+          const offerDescs = readOnlyState.getOfferDescsFor(offerIds);
+          const currentQuantities = readOnlyState.getQuantitiesFor(offerIds);
           insist(
             areRightsConserved(
-              state.strategies,
+              readOnlyState.strategies,
               currentQuantities,
               reallocation,
             ),
           )`Rights are not conserved in the proposed reallocation`;
-          const amounts = toAmountMatrix(state.assays, reallocation);
+          const amounts = toAmountMatrix(readOnlyState.assays, reallocation);
           insist(
-            isOfferSafeForAll(state.assays, offerDescs, amounts),
+            isOfferSafeForAll(readOnlyState.assays, offerDescs, amounts),
           )`The proposed reallocation was not offer safe`;
           // save the reallocation
-          state.setQuantitiesFor(offerIds, reallocation);
+          adminState.setQuantitiesFor(offerIds, reallocation);
         },
         eject: offerIds => {
-          const quantities = state.getQuantitiesFor(offerIds);
-          const amounts = toAmountMatrix(state.assays, quantities);
+          const quantities = readOnlyState.getQuantitiesFor(offerIds);
+          const amounts = toAmountMatrix(readOnlyState.assays, quantities);
           const payments = makePayments(amounts);
-          const results = state.getResultsFor(offerIds);
+          const results = adminState.getResultsFor(offerIds);
           results.map((result, i) => result.res(payments[i]));
           // delete offerIds after those offers have been allocated
-          state.removeOffers(offerIds);
+          adminState.removeOffers(offerIds);
         },
-        getIssuers: _ =>
-          (state && state.issuers && state.issuers.slice()) || undefined,
-        getAssays: _ => state.assays,
-        getQuantitiesFor: state.getQuantitiesFor,
-        getOffers: _ => state.offerDescs,
+        getIssuers: readOnlyState.getIssuers,
+        getAssays: readOnlyState.getAssays,
+        getQuantitiesFor: readOnlyState.getQuantitiesFor,
+        getOfferDescsFor: readOnlyState.getOfferDescsFor,
         getSeatIssuer: () => seatIssuer,
         getEscrowReceiptIssuer: () => escrowReceiptIssuer,
       });

@@ -1,38 +1,44 @@
+import harden from '@agoric/harden';
+
 const makeState = issuers => {
   const quantities = new WeakMap();
-  const offerDescs = new WeakMap();
+  const offers = new WeakMap();
   const results = new WeakMap();
+  const purses = issuers.map(issuer => issuer.makeEmptyPurse());
 
-  const strategies = issuers.map(issuer => issuer.getStrategy());
-
-  const state = {
-    status: 'initialized',
+  const readOnlyState = harden({
     issuers,
     assays: issuers.map(issuer => issuer.getAssay()),
-    strategies,
-    purses: issuers.map(issuer => issuer.makeEmptyPurse()),
+    strategies: issuers.map(issuer => issuer.getStrategy()),
+    getIssuers: () => issuers,
+    getAssays: () => readOnlyState.assays,
+    getStrategies: () => readOnlyState.strategies,
+    getQuantitiesFor: objIds => objIds.map(objId => quantities.get(objId)),
+    getOfferDescsFor: objIds => objIds.map(objId => offers.get(objId)),
+  });
+
+  const adminState = harden({
+    getPurses: () => purses,
+    setQuantity: (offerId, quantity) => quantities.set(offerId, quantity),
+    setOffer: (offerId, offerDesc) => offers.set(offerId, offerDesc),
+    setResult: (offerId, result) => results.set(offerId, result),
+    setQuantitiesFor: (objIds, reallocation) =>
+      objIds.map((objId, i) => quantities.set(objId, reallocation[i])),
+    getResultsFor: objIds => objIds.map(objId => results.get(objId)),
+    removeOffers: objIds => {
+      // has-side-effects
+      // eslint-disable-next-line array-callback-return
+      objIds.map(objId => {
+        quantities.delete(objId);
+        offers.delete(objId);
+        results.delete(objId);
+      });
+    },
+  });
+  return {
+    adminState,
+    readOnlyState,
   };
-  state.purseQuantities = state.strategies.map(strategy => strategy.empty());
-  state.poolQuantities = state.strategies.map(strategy => strategy.empty());
-  state.addQuantity = (offerId, quantity) => quantities.set(offerId, quantity);
-  state.addOfferDesc = (offerId, offerDesc) =>
-    offerDescs.set(offerId, offerDesc);
-  state.addResult = (offerId, result) => results.set(offerId, result);
-  state.getQuantitiesFor = objIds => objIds.map(objId => quantities.get(objId));
-  state.setQuantitiesFor = (objIds, reallocation) =>
-    objIds.map((objId, i) => quantities.set(objId, reallocation[i]));
-  state.getOfferDescsFor = objIds => objIds.map(objId => offerDescs.get(objId));
-  state.getResultsFor = objIds => objIds.map(objId => results.get(objId));
-  state.removeOffers = objIds => {
-    // has-side-effects
-    // eslint-disable-next-line array-callback-return
-    objIds.map(objId => {
-      quantities.delete(objId);
-      offerDescs.delete(objId);
-      results.delete(objId);
-    });
-  };
-  return state;
 };
 
 export { makeState };
