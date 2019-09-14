@@ -1,11 +1,11 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { makeZoe } from '../../../../core/zoe/zoe';
-import { makeSwapMaker } from '../../../../core/zoe/contracts/swap/swap';
-import { swapSrcs } from '../../../../core/zoe/contracts/swap/swapSrcs';
-import { makeMint } from '../../../../core/issuers';
-import { offerEqual } from '../../../../core/zoe/utils/utils';
+import { makeZoe } from '../../../../../core/zoe/zoe';
+import { makeSwapMaker } from '../../../../../core/zoe/contracts/swap/swap';
+import { swapSrcs } from '../../../../../core/zoe/contracts/swap/swapSrcs';
+import { makeMint } from '../../../../../core/issuers';
+import { offerEqual } from '../../../../../core/zoe/utils/utils';
 
 const setup = () => {
   const moolaMint = makeMint('moola');

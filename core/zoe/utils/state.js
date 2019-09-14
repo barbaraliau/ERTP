@@ -19,9 +19,9 @@ const makeState = issuers => {
 
   const adminState = harden({
     getPurses: () => purses,
-    setQuantity: (offerId, quantity) => quantities.set(offerId, quantity),
     setOffer: (offerId, offerDesc) => offers.set(offerId, offerDesc),
     setResult: (offerId, result) => results.set(offerId, result),
+    setQuantity: (offerId, quantity) => quantities.set(offerId, quantity),
     setQuantitiesFor: (objIds, reallocation) =>
       objIds.map((objId, i) => quantities.set(objId, reallocation[i])),
     getResultsFor: objIds => objIds.map(objId => results.get(objId)),

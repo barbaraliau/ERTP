@@ -1,8 +1,7 @@
 # TODO
-
-* custom state machine
 * test swap over vats with Alice/Bob
 * finish uniswap
+* add cancelling back to swap
 * test with covered call, make sure solves the "Fred problem"
 * write up all of the requirements and features
 * timer

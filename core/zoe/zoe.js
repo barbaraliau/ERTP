@@ -40,6 +40,25 @@ const makeZoe = () => {
         );
       }
 
+      // an array of an empty quantity per issuer
+      const makeEmptyQuantities = () =>
+        readOnlyState.strategies.map(strategy => strategy.empty());
+
+      const makeEmptyOffer = () => {
+        const result = makePromise();
+        const emptyOfferDescs = readOnlyState.assays.map(assay =>
+          harden({
+            rule: 'wantAtLeast',
+            amount: assay.empty(),
+          }),
+        );
+        const emptyOfferId = harden({});
+        adminState.setQuantity(emptyOfferId, makeEmptyQuantities());
+        adminState.setOffer(emptyOfferId, emptyOfferDescs);
+        adminState.setResult(emptyOfferId, result);
+        return emptyOfferId;
+      };
+
       const userFacet = harden({
         // Escrow sets the `quantities` (the amount escrowed per
         // player per issuer)
@@ -143,10 +162,13 @@ const makeZoe = () => {
         },
         getIssuers: readOnlyState.getIssuers,
         getAssays: readOnlyState.getAssays,
+        getStrategies: readOnlyState.getStrategies,
         getQuantitiesFor: readOnlyState.getQuantitiesFor,
         getOfferDescsFor: readOnlyState.getOfferDescsFor,
         getSeatIssuer: () => seatIssuer,
         getEscrowReceiptIssuer: () => escrowReceiptIssuer,
+        makeEmptyOffer,
+        makeEmptyQuantities,
       });
 
       const governingContract = makeContract(governingContractFacet);

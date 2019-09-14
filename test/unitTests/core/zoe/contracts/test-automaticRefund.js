@@ -1,9 +1,9 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { makeZoe } from '../../../../core/zoe/zoe';
-import { makeSimpleSwap } from '../../../../core/zoe/contracts/simpleSwap';
-import { makeMint } from '../../../../core/issuers';
+import { makeZoe } from '../../../../../core/zoe/zoe';
+import { makeAutomaticRefund } from '../../../../../core/zoe/contracts/automaticRefund';
+import { makeMint } from '../../../../../core/issuers';
 
 const setup = () => {
   const moolaMint = makeMint('moola');
@@ -23,7 +23,7 @@ const setup = () => {
   });
 };
 
-test('zoe.makeInstance with simpleSwap', async t => {
+test('zoe.makeInstance with automaticRefund', async t => {
   try {
     const { issuers, mints, zoe } = setup();
     const escrowReceiptIssuer = zoe.getEscrowReceiptIssuer();
@@ -40,11 +40,14 @@ test('zoe.makeInstance with simpleSwap', async t => {
     const bobSimoleanPurse = mints[1].mint(issuers[1].makeAmount(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
-    // 1: Alice creates a simpleSwap instance
-    const { zoeInstance, governingContract: simpleSwap } = zoe.makeInstance(
-      makeSimpleSwap,
-      issuers,
-    );
+    // 1: A smart contract creates an automatic refund instance
+    const {
+      zoeInstance,
+      governingContract: automaticRefund,
+    } = zoe.makeInstance(makeAutomaticRefund, issuers);
+
+    // The issuers are defined at this step
+    t.deepEquals(zoeInstance.getIssuers(), issuers);
 
     // 2: Alice escrows with the zoeInstance
     const aliceOfferDesc = harden([
@@ -74,7 +77,7 @@ test('zoe.makeInstance with simpleSwap', async t => {
     // make an offer) and a seat for herself (the right to claim after
     // an offer has been made). She gets a seat since she made an
     // offer. Bob gets an invite.
-    const { offerMade: aliceOfferMadeDesc } = await simpleSwap.makeOffer(
+    const aliceOfferMadeDesc = await automaticRefund.makeOffer(
       aliceEscrowReceipt,
     );
 
@@ -108,12 +111,10 @@ test('zoe.makeInstance with simpleSwap', async t => {
     );
 
     // 8: Bob makes an offer with his escrow receipt
-    const { offerMade: bobOfferMadeDesc } = await simpleSwap.makeOffer(
-      bobEscrowReceipt,
-    );
+    const bobOfferMadeDesc = await automaticRefund.makeOffer(bobEscrowReceipt);
 
-    t.equals(await bobOfferMadeDesc, bobOfferDesc);
-    t.equals(await aliceOfferMadeDesc, aliceOfferDesc);
+    t.equals(bobOfferMadeDesc, bobOfferDesc);
+    t.equals(aliceOfferMadeDesc, aliceOfferDesc);
 
     // 7: Alice unwraps the claimWinnings to get her seat
     const aliceSeat = await aliceClaimWinnings.unwrap();
@@ -127,11 +128,11 @@ test('zoe.makeInstance with simpleSwap', async t => {
     // 10: Bob claims his position of the outcome (what Alice paid in)
     const bobResult = await bobSeat.getWinnings();
 
-    // Alice gets back what she wanted
-    t.deepEquals(aliceResult[1].getBalance(), aliceOfferDesc[1].amount);
+    // Alice gets back what she put in
+    t.deepEquals(aliceResult[0].getBalance(), aliceOfferDesc[0].amount);
 
-    // Alice didn't get any of what she put in
-    t.equals(aliceResult[0].getBalance().quantity, 0);
+    // Alice didn't get any of what she wanted
+    t.equals(aliceResult[1].getBalance().quantity, 0);
 
     // 11: Alice deposits her refund to ensure she can
     await aliceMoolaPurse.depositAll(aliceResult[0]);
@@ -144,10 +145,10 @@ test('zoe.makeInstance with simpleSwap', async t => {
     // Assert that the correct refund was achieved.
     // Alice had 3 moola and 0 simoleans.
     // Bob had 0 moola and 7 simoleans.
-    t.equals(aliceMoolaPurse.getBalance().quantity, 0);
-    t.equals(aliceSimoleanPurse.getBalance().quantity, 7);
-    t.equals(bobMoolaPurse.getBalance().quantity, 3);
-    t.equals(bobSimoleanPurse.getBalance().quantity, 0);
+    t.equals(aliceMoolaPurse.getBalance().quantity, 3);
+    t.equals(aliceSimoleanPurse.getBalance().quantity, 0);
+    t.equals(bobMoolaPurse.getBalance().quantity, 0);
+    t.equals(bobSimoleanPurse.getBalance().quantity, 7);
   } catch (e) {
     t.assert(false, e);
     console.log(e);

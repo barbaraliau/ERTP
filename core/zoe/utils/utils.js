@@ -62,6 +62,11 @@ const allAmountsEqual = (assays, leftRules, rightRules) =>
     .map((assay, i) => assay.equals(leftRules[i].amount, rightRules[i].amount))
     .reduce(allTrue);
 
+const withQuantities = (strategies, leftQuantities, rightQuantities) =>
+  leftQuantities.map((leftQ, i) =>
+    strategies[i].with(leftQ, rightQuantities[i]),
+  );
+
 export {
   mapMatrix,
   allTrue,
@@ -75,4 +80,5 @@ export {
   amountEqual,
   allAmountsEqual,
   offerEqual,
+  withQuantities,
 };
