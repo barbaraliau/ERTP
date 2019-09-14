@@ -73,7 +73,7 @@ test('autoSwap with valid offers', async t => {
       },
       {
         rule: 'wantAtLeast',
-        amount: allIssuers[2].makeAmount(0),
+        amount: allIssuers[2].makeAmount(10),
       },
     ]);
     // Currently, alice can only 'wantAtLeast' 0
@@ -90,11 +90,17 @@ test('autoSwap with valid offers', async t => {
       allegedAliceEscrowReceipt,
     );
 
-    const liquidityPayment = await autoswap.addLiquidity(aliceEscrowReceipt);
+    const liquidityOk = await autoswap.addLiquidity(aliceEscrowReceipt);
+
+    t.equals(liquidityOk, 'added liquidity');
+
+    const aliceAddLiquiditySeat = await aliceClaimWinnings.unwrap();
+
+    const liquidityPayments = await aliceAddLiquiditySeat.getWinnings();
 
     t.deepEquals(
-      liquidityPayment.getBalance(),
-      liquidityIssuer.makeAmount(100),
+      liquidityPayments[2].getBalance(),
+      liquidityIssuer.makeAmount(10),
     );
     t.deepEquals(autoswap.getPoolQuantities(), [10, 5, 0]);
 
@@ -205,22 +211,16 @@ test('autoSwap with valid offers', async t => {
       },
       {
         rule: 'haveExactly',
-        amount: allIssuers[2].makeAmount(100),
+        amount: allIssuers[2].makeAmount(10),
       },
     ]);
-
-    const aliceRemoveLiquidityPayments = [
-      undefined,
-      undefined,
-      liquidityPayment,
-    ];
 
     const {
       escrowReceipt: aliceRemoveLiquidityEscrowReceipt,
       claimWinnings: aliceRemoveLiquidityWinnings,
     } = await zoeInstance.escrow(
       aliceRemoveLiquidityOfferDesc,
-      aliceRemoveLiquidityPayments,
+      liquidityPayments,
     );
 
     const removeLiquidityResult = await autoswap.removeLiquidity(
@@ -244,7 +244,7 @@ test('autoSwap with valid offers', async t => {
       aliceWinningsPayments[2].getBalance(),
       allIssuers[2].makeAmount(0),
     );
-    t.deepEquals(autoswap.getPoolQuantities(), [0, 0, 100]);
+    t.deepEquals(autoswap.getPoolQuantities(), [0, 0, 10]);
   } catch (e) {
     t.assert(false, e);
     console.log(e);

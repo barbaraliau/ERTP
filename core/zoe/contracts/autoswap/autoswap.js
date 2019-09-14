@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
 import { calcReallocation } from './calcReallocation';
 import { calcSwap } from './calcSwap';
+import { calcLiquidityQOut } from './calcLiquidityQOut';
 import { makeMint } from '../../../issuers';
 
 import makePromise from '../../../../util/makePromise';
@@ -84,37 +85,61 @@ const makeAutoSwapMaker = () => {
   const makeAutoSwap = zoeInstance => {
     const escrowReceiptIssuer = zoeInstance.getEscrowReceiptIssuer();
     const strategies = zoeInstance.getStrategies();
-    const poolOfferId = zoeInstance.makeEmptyOffer();
+    const assays = zoeInstance.getAssays();
+    const poolOfferId = zoeInstance.escrowEmpty();
     const getPoolQuantities = () =>
       zoeInstance.getQuantitiesFor(harden([poolOfferId]))[0];
 
-    const makeLiquidityOfferKeeper = () => {
+    const recordLiquidityOffer = async offerId => {
+      const addedLiquidity = zoeInstance.getQuantitiesFor(harden([offerId]))[0];
+      const oldPoolQuantities = getPoolQuantities();
 
-      return harden({
-        recordLiquidityOffer: offerId => {
-          const addedLiquidity = zoeInstance.getQuantitiesFor(
-            harden([offerId]),
-          )[0];
-          const oldPoolQuantities = getPoolQuantities();
+      const newPoolQuantities = withQuantities(
+        strategies,
+        oldPoolQuantities,
+        addedLiquidity,
+      );
 
-          const newPoolQuantities = withQuantities(
-            strategies,
-            oldPoolQuantities,
-            addedLiquidity,
-          );
+      const liquidityQOut = calcLiquidityQOut(
+        oldPoolQuantities[2],
+        oldPoolQuantities[0],
+        addedLiquidity[0],
+      );
 
-          // Set the liquidity offer to empty and add it all to the
-          // pool offer
-          zoeInstance.reallocate(harden([offerId, poolOfferId]), [
-            zoeInstance.makeEmptyQuantities(),
-            newPoolQuantities,
-          ]);
+      const newPurse = liquidityMint.mint(liquidityQOut);
+      const newPayment = newPurse.withdrawAll();
+
+      const liquidityOfferDesc = [
+        {
+          rule: 'wantAtLeast',
+          amount: assays[0].empty(),
         },
-        getPoolQuantities,
-      });
-    };
+        {
+          rule: 'wantAtLeast',
+          amount: assays[1].empty(),
+        },
+        {
+          rule: 'haveExactly',
+          amount: assays[2].make(liquidityQOut),
+        },
+      ];
 
-    const { recordLiquidityOffer } = makeLiquidityOfferKeeper();
+      const { offerId: liquidityOfferId } = await zoeInstance.escrowAndGetId(
+        liquidityOfferDesc,
+        harden([undefined, undefined, newPayment]),
+      );
+
+      const quantitiesToPlayer = zoeInstance.makeEmptyQuantities();
+      quantitiesToPlayer[2] = liquidityQOut;
+
+      // Set the liquidity offer to empty and add it all to the
+      // pool offer
+      zoeInstance.reallocate(harden([offerId, poolOfferId, liquidityOfferId]), [
+        quantitiesToPlayer,
+        newPoolQuantities,
+        zoeInstance.makeEmptyQuantities(),
+      ]);
+    };
 
     const depositEscrowReceipt = async escrowReceipt => {
       const amount = await escrowReceiptIssuer
@@ -141,16 +166,9 @@ const makeAutoSwapMaker = () => {
           // TODO: refund escrow receipt?
         }
 
-        recordLiquidityOffer(id);
-
-        // TODO: mint an appropriate amount
-        // TODO: figure out how to make zoe do this in the winnings
-        // maybe autoswap makes an offer with only liquidity tokens
-        // and then reallocates those?
-        const newPurse = liquidityMint.mint(100);
-        const newPayment = newPurse.withdrawAll();
-        offerResult.res(newPayment);
+        await recordLiquidityOffer(id);
         zoeInstance.eject(harden([id]));
+        offerResult.res('added liquidity');
         return offerResult.p;
       },
       // TODO: figure out how to enforce offer safety for this
@@ -178,8 +196,7 @@ const makeAutoSwapMaker = () => {
         result.res('liquidity successfully removed');
         return result.p;
       },
-      getPrice: amountsIn =>
-        getPrice(zoeInstance.getAssays(), getPoolQuantities(), amountsIn),
+      getPrice: amountsIn => getPrice(assays, getPoolQuantities(), amountsIn),
       makeOffer: async escrowReceipt => {
         const offerResult = makePromise();
         const { id, offerMade: offerMadeDesc } = await depositEscrowReceipt(

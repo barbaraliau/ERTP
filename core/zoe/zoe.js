@@ -44,7 +44,7 @@ const makeZoe = () => {
       const makeEmptyQuantities = () =>
         readOnlyState.strategies.map(strategy => strategy.empty());
 
-      const makeEmptyOffer = () => {
+      const escrowEmpty = () => {
         const result = makePromise();
         const emptyOfferDescs = readOnlyState.assays.map(assay =>
           harden({
@@ -59,47 +59,63 @@ const makeZoe = () => {
         return emptyOfferId;
       };
 
-      const userFacet = harden({
-        // Escrow sets the `quantities` (the amount escrowed per
-        // player per issuer)
-        escrow: async (offerDesc, payments) => {
-          const result = makePromise();
-          const quantitiesForPlayerPromises = adminState
-            .getPurses()
-            .map(async (purse, i) => {
-              // if the user's contractual understanding includes
-              // "haveExactly", make sure that they have supplied the
-              // coordinating payment
-              if (offerDesc[i].rule === 'haveExactly') {
-                const amount = await purse.depositExactly(
+      // This is used by governing contracts for accounting (for
+      // instance, autoswap minting liquidity tokens to start), so no
+      // need to give a seat.
+      const escrowAndGetId = async (offerDesc, payments) => {
+        const result = makePromise();
+        const quantitiesForPlayerPromises = adminState
+          .getPurses()
+          .map(async (purse, i) => {
+            // if the user's contractual understanding includes
+            // "haveExactly", make sure that they have supplied the
+            // coordinating payment
+            if (offerDesc[i].rule === 'haveExactly') {
+              const amount = await purse.depositExactly(
+                offerDesc[i].amount,
+                payments[i],
+              );
+              return amount.quantity;
+            }
+            // if the user's contractual understanding includes
+            // "haveAtLeast", make sure that they have supplied the
+            // coordinating payment
+            // TODO: test this with an example
+            if (offerDesc[i].rule === 'haveAtLeast') {
+              const amount = await purse.depositAll(payments[i]);
+              insist(
+                readOnlyState.strategies[i].includes(
+                  amount,
                   offerDesc[i].amount,
-                  payments[i],
-                );
-                return amount.quantity;
-              }
-              // if the user's contractual understanding includes
-              // "haveAtLeast", make sure that they have supplied the
-              // coordinating payment
-              // TODO: test this with an example
-              if (offerDesc[i].rule === 'haveAtLeast') {
-                const amount = await purse.depositAll(payments[i]);
-                insist(
-                  readOnlyState.strategies[i].includes(
-                    amount,
-                    offerDesc[i].amount,
-                  ),
-                )`did not escrow enough to cover 'haveAtLeast'`;
-                return amount.quantity;
-              }
-              return readOnlyState.strategies[i].empty();
-            });
+                ),
+              )`did not escrow enough to cover 'haveAtLeast'`;
+              return amount.quantity;
+            }
+            return readOnlyState.strategies[i].empty();
+          });
 
-          const quantitiesForPlayer = await Promise.all(
-            quantitiesForPlayerPromises,
-          );
+        const quantitiesForPlayer = await Promise.all(
+          quantitiesForPlayerPromises,
+        );
+
+        const offerId = harden({});
+
+        adminState.setQuantity(offerId, quantitiesForPlayer);
+        adminState.setOffer(offerId, offerDesc);
+        adminState.setResult(offerId, result);
+
+        return harden({
+          offerId,
+          result,
+        });
+      };
+
+      const userFacet = harden({
+        escrow: async (offerDesc, payments) => {
+          const { offerId, result } = await escrowAndGetId(offerDesc, payments);
 
           const escrowReceiptQuantity = harden({
-            id: harden({}),
+            id: offerId,
             offerMade: offerDesc,
           });
           const escrowReceiptPurse = escrowReceiptMint.mint(
@@ -108,7 +124,7 @@ const makeZoe = () => {
           const escrowReceiptPaymentP = escrowReceiptPurse.withdrawAll();
 
           const claimWinningsQuantity = harden({
-            src: 'nothing', // TODO: fix this
+            src: 'nothing', // TODO: remove the src field
             id: getNewIdObj(),
             offerMade: offerDesc,
           });
@@ -118,10 +134,6 @@ const makeZoe = () => {
           });
           addUseObj(claimWinningsQuantity.id, seat);
           const claimWinningsPaymentP = claimWinningsPurseP.withdrawAll();
-
-          adminState.setQuantity(escrowReceiptQuantity.id, quantitiesForPlayer);
-          adminState.setOffer(escrowReceiptQuantity.id, offerDesc);
-          adminState.setResult(escrowReceiptQuantity.id, result);
 
           return {
             escrowReceipt: escrowReceiptPaymentP,
@@ -167,7 +179,8 @@ const makeZoe = () => {
         getOfferDescsFor: readOnlyState.getOfferDescsFor,
         getSeatIssuer: () => seatIssuer,
         getEscrowReceiptIssuer: () => escrowReceiptIssuer,
-        makeEmptyOffer,
+        escrowEmpty,
+        escrowAndGetId,
         makeEmptyQuantities,
       });
 
