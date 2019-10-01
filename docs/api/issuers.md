@@ -4,7 +4,7 @@
 
 Holding an Issuer provides the ability to create amounts and empty purses, but confers no rights. It is also the mechanism used to get exclusive access to a Purse or Payment that you already hold, or to burn some or all of the contained rights.
 
-### #getLabel
+### getLabel() -> (Comparable)
 Get the label for this Issuer. Labels can be used to manually construct amounts.
 
 - **Arguments:**
