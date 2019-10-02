@@ -18,7 +18,7 @@ features:
   - title: Securely Create and Transfer
     details: All kinds of digital assets can be easily created, but importantly, they can be transferred in exactly the same ways, with exactly the same security properties.
 
-footer: Apache-2.0 Licensed | Copyright © 2019-present Barbara Liau
+footer: Apache-2.0 Licensed | Copyright © 2019-Agoric
 ---
 
 ## A quick tutorial
