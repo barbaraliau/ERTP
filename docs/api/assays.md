@@ -11,14 +11,11 @@ Creator and validator of asset Amounts.
 Amounts are the canonical description of tradable goods. They are manipulated by mints, and represent the goods and currency carried by purses and payments. They can be used to represent things like currency, stock, and the abstract right to participate in a particular exchange.
 The assay treats the Label as an opaque object. It's used in the amounts produced by this assay.
 
-### assay.getLabel
+### assay.getLabel()
 Return this assay's label.
 
-- **Arguments:**
-  - None
-
-- **Returns:**
-  - `{Label}`
+- None
+- **Returns:** `{Label}`
 
 - **Usage:**
 
@@ -26,14 +23,11 @@ Return this assay's label.
 Examples
 ```
 
-### assay.make
+### assay.make()
 Make a new verified Amount containing the `allegedQuantity`.
 
-- **Arguments:**
-  - `allegedQuantity` {Quantity}
-
-- **Returns:**
-  - `{Amount}`
+- `allegedQuantity` `{Quantity}`
+- **Returns:** `{Amount}`
 
 - **Usage:**
 
@@ -41,15 +35,12 @@ Make a new verified Amount containing the `allegedQuantity`.
 Examples
 ```
 
-### assay.coerce
+### assay.coerce()
 Is this like an Amount object made by this Assay, such as one received by pass-by-copy from an otherwise-identical remote Amount? If so, return an Amount object made by this Assay. Otherwise error.
 For fungible amounts based on natural numbers, coerce also accepts a bare number which it will coerce to a labeled number via assay.make().
 
-- **Arguments:**
-  - `allegedAmount` {Amount}
-
-- **Returns:**
-  - `{Amount}`
+- `allegedAmount` `{Amount}`
+- **Returns:** `{Amount}`
 
 - **Usage:**
 
@@ -57,14 +48,11 @@ For fungible amounts based on natural numbers, coerce also accepts a bare number
 Examples
 ```
 
-### assay.quantity
+### assay.quantity()
 Return a Quantity representing the Amount parameter.
 
-- **Arguments:**
-  - `amount` {Amount}
-
-- **Returns:**
-  - `{Quantity}`
+- `amount` `{Amount}`
+- **Returns:** `{Quantity}`
 
 - **Usage:**
 
@@ -72,14 +60,11 @@ Return a Quantity representing the Amount parameter.
 Examples
 ```
 
-### assay.empty
+### assay.empty()
 Return an empty amount. Conveys no authority.
 
-- **Arguments:**
-  - None
-
-- **Returns:**
-  - `{Amount}`
+- None
+- **Returns:** `{Amount}`
 
 - **Usage:**
 
@@ -87,14 +72,11 @@ Return an empty amount. Conveys no authority.
 Examples
 ```
 
-### assay.isEmpty
+### assay.isEmpty()
 Return true if the Amount is empty. Otherwise false.
 
-- **Arguments:**
-  - `amount` {Amount}
-
-- **Returns:**
-  - `{boolean}`
+- `amount` `{Amount}`
+- **Returns:** `{boolean}`
 
 - **Usage:**
 
@@ -102,15 +84,12 @@ Return true if the Amount is empty. Otherwise false.
 Examples
 ```
 
-### assay.includes
+### assay.includes()
 Returns true if the `leftAmount` contains the `rightAmount`.
 
-- **Arguments:**
-  - `leftAmount` {Amount}
-  - `rightAmount` {Amount}
-
-- **Returns:**
-  - `{boolean}`
+- `leftAmount` `{Amount}`
+- `rightAmount` `{Amount}`
+- **Returns:** `{boolean}`
 
 - **Usage:**
 
@@ -118,15 +97,12 @@ Returns true if the `leftAmount` contains the `rightAmount`.
 Examples
 ```
 
-### assay.equals
+### assay.equals()
 Returns true if the leftAmount equals the rightAmount. We assume that if includes is true in both directions, equals is also true.
 
-- **Arguments:**
-  - `leftAmount` {Amount}
-  - `rightAmount` {Amount}
-
-- **Returns:**
-  - `{boolean}`
+- `leftAmount` `{Amount}`
+- `rightAmount` `{Amount}`
+- **Returns:** `{boolean}`
 
 - **Usage:**
 
@@ -134,15 +110,12 @@ Returns true if the leftAmount equals the rightAmount. We assume that if include
 Examples
 ```
 
-### assay.with
+### assay.with()
 Returns a new amount that includes both leftAmount and rightAmount. For fungible amounts this means adding the quantities. For other kinds of amounts, it usually means including both.
 
-- **Arguments:**
-  - `leftAmount` {Amount}
-  - `rightAmount` {Amount}
-
-- **Returns:**
-  - `{Amount}`
+- `leftAmount` `{Amount}`
+- `rightAmount` `{Amount}`
+- **Returns:** `{Amount}`
 
 - **Usage:**
 
@@ -150,15 +123,12 @@ Returns a new amount that includes both leftAmount and rightAmount. For fungible
 Examples
 ```
 
-### assay.without
+### assay.without()
 Returns a new amount that includes the portion of leftAmount not included in rightAmount. If leftAmount doesn't include rightAmout, throw an error.
 
-- **Arguments:**
-  - `leftAmount` {Amount}
-  - `rightAmount` {Amount}
-
-- **Returns:**
-  - `{Amount}`
+- `leftAmount` `{Amount}`
+- `rightAmount` `{Amount}`
+- **Returns:** `{Amount}`
 
 - **Usage:**
 
