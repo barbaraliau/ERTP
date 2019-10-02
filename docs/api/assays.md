@@ -14,7 +14,6 @@ The assay treats the Label as an opaque object. It's used in the amounts produce
 ### assay.getLabel()
 Return this assay's label.
 
-- None
 - **Returns:** `{Label}`
 
 - **Usage:**
@@ -37,6 +36,7 @@ Examples
 
 ### assay.coerce()
 Is this like an Amount object made by this Assay, such as one received by pass-by-copy from an otherwise-identical remote Amount? If so, return an Amount object made by this Assay. Otherwise error.
+
 For fungible amounts based on natural numbers, coerce also accepts a bare number which it will coerce to a labeled number via assay.make().
 
 - `allegedAmount` `{Amount}`
@@ -63,7 +63,6 @@ Examples
 ### assay.empty()
 Return an empty amount. Conveys no authority.
 
-- None
 - **Returns:** `{Amount}`
 
 - **Usage:**
@@ -138,6 +137,7 @@ Examples
 
 ## Label
 The label for an amount identifies the issuer, and includes a description of the rights it represents.
+
 Every amount created by the Assay will have the same label, but recipients cannot use the label by itself to verify that a purported amount is authentic, since the label can be copied.
 
 ## Description
@@ -145,8 +145,10 @@ Human-readable description of a kind of rights. The Descriptions must be Compara
 
 ## UniAssay
 UniAssay represents amounts that have unique descriptions. It is a refinement of Assay that we've found useful, but has no special place in the protocol.
+
 The quantity must either be null, in which case it is empty,or be some truthy comparable value, in which case it represents a single unique unit described by that truthy quantity. Combining two uni amounts with different truthy quantities fails, as they represent non-combinable rights.
 
 ## NatAssay
 Assay for a labeled natural number describing a quantity of fungible erights. The label describes what kinds of rights these are. NatAssay is a refinement of Assay that we've found useful, but has no special place in the protocol.
+
 Empty amounts have zero units. 'includes()' verifies that leftAmount is greater than or equal to rightAmount. 'with()' and 'without()' add and subtract their contents.
