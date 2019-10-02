@@ -26,7 +26,6 @@ const galleryPixelAssay = galleryPixelIssuer.getAssay();
 After getting the `Assay` of an `Issuer`, `Assay` methods can be called to verify properties of the amount. See the [Assays API](/api/assays) for all available methods.
 
 ```js
-function insistNonEmptyAmount(issuer, amount) {
   insist(!issuer.getAssay().isEmpty(amount))`\
     no use rights present in amount ${amount}`;
 }
@@ -61,12 +60,8 @@ Examples
 ### issuer.makeEmptyPurse(name)
 Make an empty purse associated with this kind of right.
 
-- **Arguments:**
-  - `name` {String}
-
-- **Returns:**
-  - `{Purse}`
-
+- `name` `{String}`
+- **Returns:** `{Purse}`
 - **Usage:**
 
 ```js
@@ -76,107 +71,80 @@ Examples
 ### issuer.makeEmptyPurse(name)
 Make an empty purse associated with this kind of right.
 
-- **Arguments:**
-  - `name` {String}
-
-- **Returns:**
-  - `{Purse}`
-
+- `name` `{String}`
+- **Returns:** `{Purse}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### issuer.combine()
+### issuer.combine(paymentsArray, name)
 Combine multiple payments into one payment.
 
 - `paymentsArray` `{Array <Payment>}` - A list of payments to combine into a new payment
-- `name` {String} - Name to call this combination of payments
-
-- **Returns:**
-  - `{Payment}`
-
+- `name` `{String}` - Name to call this combination of payments
+- **Returns:** `{Payment}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### issuer.split
+### issuer.split(payment, amountsArray)
 Split a single payment into multiple payments, according to the amounts and names passed in.
 
-- **Arguments:**
-  - `payment` {Payment}
-  - `amountsArray` `{Array <Amount>}`
-
-- **Returns:**
-  - `{Array <Payment>}`
-
+- `payment` `{Payment}`
+- `amountsArray` `{Array <Amount>}`
+- **Returns:** `{Array <Payment>}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### issuer.claimExactly
+### issuer.claimExactly(amount, src, name)
 Make a new Payment that has exclusive rights to all the contents of src. If amount does not equal the balance of the src payment, throws error.
 
-- **Arguments:**
-  - `amount` {Amount}
-  - `src` {Payment}
-  - `name` {String} - name of a new Payment
-
-- **Returns:**
-  - `{Payment}`
-
+- `amount` `{Amount}`
+- `src` `{Payment}`
+- `name` `{String}` - name of a new Payment
+- **Returns:** `{Payment}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### issuer.claimAll
+### issuer.claimAll(src, name)
 Make a new Payment that has exclusive rights to all the contents of src.
 
-- **Arguments:**
-  - `src` {Payment}
-  - `name` {String} - name of a new Payment
-
-- **Returns:**
-  - `{Payment}`
-
+- `src` `{Payment}`
+- `name` `{String}` - name of a new Payment
+- **Returns:** `{Payment}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### issuer.burnExactly
+### issuer.burnExactly(amount, src)
 Burn all of the rights from src. If amount does not equal the balance of the src payment, throw error.
 
-- **Arguments:**
-  - `amount` {Amount}
-  - `src` {Payment}
-
-- **Returns:**
-  - `{Amount}`
-
+- `amount` `{Amount}`
+- `src` `{Payment}`
+- **Returns:** `{Amount}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### issuer.burnAll
+### issuer.burnAll(src)
 Burn all of the rights from src.
 
-- **Arguments:**
-  - `src` {Payment}
-
-- **Returns:**
-  - `{Amount}`
-
+- `src` `{Payment}`
+- **Returns:** `{Amount}`
 - **Usage:**
 
 ```js
@@ -191,15 +159,11 @@ The description becomes part of the label, used by the assay to identify amounts
 
 Description doesn't have to be a string, but it will only be used for its value.
 
-### mintMaker.makeMint
+### mintMaker.makeMint(description, makeConfig)
 
-- **Arguments:**
-  - `description` {Comparable}
-  - `makeConfig` {MintConfigMaker}
-
-- **Returns:**
-  - `{Mint}`
-
+- `description` `{Comparable}`
+- `makeConfig` `{MintConfigMaker}`
+- **Returns:** `{Mint}`
 - **Usage:**
 
 ```js
@@ -209,31 +173,22 @@ Examples
 ## Mint
 Holding a Mint carries the right to control issuance and destruction of purses and payments containing amounts of a particular currency. Purses (and payments) associated with a particular issuer can only transfer value to others using the same mint.
 
-### mint.getIssuer
+### mint.getIssuer()
 Get the Issuer for this mint.
 
-- **Arguments:**
-  - None
-
-- **Returns:**
-  - `{Issuer}`
-
+- **Returns:** `{Issuer}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### mint.mint
+### mint.mint(initialBalance, name)
 Create a new Purse containing the amount. Give it the specified name or 'fa purse'.
 
-- **Arguments:**
-  - `intialBalance` {Amount}
-  - `name` {String} - the name of a Purse
-
-- **Returns:**
-  - `{Purse}`
-
+- `intialBalance` `{Amount}`
+- `name` `{String}` - the name of a Purse
+- **Returns:** `{Purse}`
 - **Usage:**
 
 ```js
@@ -243,108 +198,77 @@ Examples
 ## Purse
 Purses hold verified amounts of certain rights issued by Mints. Purses can transfer part of the balance they hold in a payment, which has a narrower interface. A purse's balance can rise and fall, through the action of depositExactly() and withdraw(). Operations on payments (`burnExactly()`, `depositExactly()`, `issuer.claimExactly()`) kill the original payment and create new payments if applicable. The primary use for Purses and Payments is for currency-like and goods-like valuables, but they can also be used to represent other kinds of rights, such as the right to participate in a particular contract.
 
-### purse.getName
+### purse.getName()
 Get the name of this purse.
 
-- **Arguments:**
-  - None
-
-- **Returns:**
-  - `{String}`
-
+- **Returns:** `{String}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### purse.getIssuer
+### purse.getIssuer()
 # Double check this description, in the `.chainmail` file it says that this method get the issuer for this **mint**
 Get the Issuer for this purse.
 
-- **Arguments:**
-  - None
-
-- **Returns:**
-  - `{Issuer}`
-
+- **Returns:** `{Issuer}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### purse.getBalance
+### purse.getBalance()
 Get the amount contained in this purse, confirmed by the issuer.
 
-- **Arguments:**
-  - None
-
-- **Returns:**
-  - `{Amount}`
-
+- **Returns:** `{Amount}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### purse.depositExactly
+### purse.depositExactly(amount, src)
 Deposit all the contents of srcPayment into this purse, returning the amount. If the amount does not equal the balance of srcPayment, throw error.
 
-- **Arguments:**
-  - `amount` {Amount}
-  - `src` {Payment}
-
-- **Returns:**
-  - `{Amount}`
-
+- `amount` `{Amount}`
+- `src` `{Payment}`
+- **Returns:** `{Amount}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### purse.depositAll
+### purse.depositAll(srcPayment)
 Deposit all the contents of srcPayment into this purse, returning the amount.
 
-- **Arguments:**
-  - `srcPayment` {Payment}
-
-- **Returns:**
-  - `{Amount}`
-
+- `srcPayment` `{Payment}`
+- **Returns:** `{Amount}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### purse.withdraw
+### purse.withdraw(amount, name)
 Withdraw amount from this purse into a new Payment.
 
-- **Arguments:**
-  - `amount` {Amount}
-  - `name` {String}
-
-- **Returns:**
-  - `{Payment}`
-
+- `amount` `{Amount}`
+- `name` `{String}`
+- **Returns:** `{Payment}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### purse.withdrawAll
+### purse.withdrawAll(name)
 Withdraw entire content of this purse into a new Payment.
 
-- **Arguments:**
-  - `name` {String}
-
-- **Returns:**
-  - `{Payment}`
-
+- `name` `{String}`
+- **Returns:** `{Payment}`
 - **Usage:**
 
 ```js
@@ -354,45 +278,30 @@ Examples
 ## Payment
 Payments hold verified amounts of certain rights issued by Mints. Amounts from payments can be deposited in purses, but otherwise, the entire amount is available when the payment is transferred. A payment's balance can only fall, through the action of `depositExactly()`, `claimExactly()` or `burnExactly()`. Payments can be converted to Purses by getting a verified issuer and calling `issuer.makeEmptyPurse().depositAll(payment)`;
 
-### payment.getName
+### payment.getName()
 Get the name of this purse.
 
-- **Arguments:**
-  - None
-
-- **Returns:**
-  - `{String}`
-
+- **Returns:** `{String}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### payment.getIssuer
+### payment.getIssuer()
 Get the Issuer for this mint.
 
-- **Arguments:**
-  - None
-
-- **Returns:**
-  - `{Issuer}`
-
+- **Returns:** `{Issuer}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### payment.getBalance
+### payment.getBalance()
 Get the amount contained in this payment, confirmed by the issuer.
 
-- **Arguments:**
-  - None
-
-- **Returns:**
-  - `{Amount}`
-
+- **Returns:** `{Amount}`
 - **Usage:**
 
 ```js
@@ -402,109 +311,80 @@ Examples
 ## Strategy
 All of the difference in how an assay behaves can be reduced to the behavior of the set operations on quantities (think: arithmetic) such as `empty`, `with`, `without`, `includes`, etc. We extract this custom logic into a strategy. Strategies are about quantity arithmetic, whereas Assays are about Amounts, which are labeled quantities. Assays use Strategies to do their quantity arithmetic, and then label the results, making new Amounts.
 
-### strategy.insistKind
+### strategy.insistKind(allegedQuantity)
 Check the kind of this quantity and throw if it is not the expected kind.
 
-- **Arguments:**
-  - `allegedQuantity` {Quantity}
-
-- **Returns:**
-  - `{Quantity}`
-
+- `allegedQuantity` `{Quantity}`
+- **Returns:** `{Quantity}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### strategy.empty
+### strategy.empty()
 Get the representation for empty.
 
-- **Arguments:**
-  - None
-
-- **Returns:**
-  - `{Quantity}`
-
+- **Returns:** `{Quantity}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### strategy.isEmpty
+### strategy.isEmpty(quantity)
 Is the quantity empty?
 
-- **Arguments:**
-  - `quantity` {Quantity}
-
-- **Returns:**
-  - `{boolean}`
-
+- `quantity` `{Quantity}`
+- **Returns:** `{boolean}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### strategy.includes
+### strategy.includes(whole, part)
 Does the whole include the part?
 
-- **Arguments:**
-  - `whole` {Quantity}
-  - `part` {Quantity}
-
-- **Returns:**
-  - `{boolean}`
-
+- `whole` `{Quantity}`
+- `part` `{Quantity}`
+- **Returns:** `{boolean}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### strategy.equals
+### strategy.equals(left, right)
 Does left equal right?
 
-- **Arguments:**
-  - `left` {Quantity}
-  - `right` {Quantity}
-
-- **Returns:**
-  - `{Quantity}`
-
+- `left` `{Quantity}`
+- `right` `{Quantity}`
+- **Returns:** `{Quantity}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### strategy.with
+### strategy.with(left, right)
 Return the left combined with the right
 
-- **Arguments:**
-  - `left` {Quantity}
-  - `right` {Quantity}
-
-- **Returns:**
-  - `{Quantity}`
-
+- `left` `{Quantity}`
+- `right` `{Quantity}`
+- **Returns:** `{Quantity}`
 - **Usage:**
 
 ```js
 Examples
 ```
 
-### strategy.without
+### strategy.without(whole, part)
 Return what remains after removing the part from the whole.
 
-- **Arguments:**
-  - `whole` {Quantity}
-  - `part` {Quantity}
-
-- **Returns:**
-  - `{Quantity}`
-
+- `whole` `{Quantity}`
+- `part` `{Quantity}`
+- **Returns:** `{Quantity}`
 - **Usage:**
 
 ```js
