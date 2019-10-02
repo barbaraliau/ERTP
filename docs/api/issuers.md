@@ -7,22 +7,17 @@ Holding an Issuer provides the ability to create amounts and empty purses, but c
 ### issuer.getLabel()
 Get the label for this Issuer. Labels can be used to manually construct amounts.
 
-- Returns: `{Comparable}` The label for the issuer.
+- **Returns:** `{Comparable}` The label for the issuer.
 
 ```js
 const { description } = issuer.getLabel();
 const childMint = makeMint(description, config);
 ```
-### issuer.getAssay
+
+### issuer.getAssay()
 Get the `Assay` for this Issuer.
 
-- **Arguments:**
-  - None
-
-- **Returns:**
-  - `{Assay}`
-
-- **Usage:**
+- **Returns:** `{Assay}`
 
 ```js
 const galleryPixelAssay = galleryPixelIssuer.getAssay();
@@ -46,35 +41,24 @@ function getPixelList(issuer, amount) {
 }
 ```
 
-### issuer.getStrategy
+### issuer.getStrategy()
 Get the Strategy for this Issuer.
 
-- **Arguments:**
-  - None
-
-- **Returns:**
-  - `{Strategy}`
-
-- **Usage:**
+- **Returns:** `{Strategy}`
 
 ```js
 Examples
 ```
-### issuer.makeAmount
+### issuer.makeAmount(quantity)
 Make an Amount that contains the indicated quantity.
-
-- **Arguments:**
-  - `quantity` {Quantity}
-
-- **Returns:**
-  - `{Amount}`
-
-- **Usage:**
+- `quantity` `{Quantity}`
+- **Returns:** `{Amount}`
 
 ```js
 Examples
 ```
-### issuer.makeEmptyPurse
+
+### issuer.makeEmptyPurse(name)
 Make an empty purse associated with this kind of right.
 
 - **Arguments:**
@@ -88,12 +72,27 @@ Make an empty purse associated with this kind of right.
 ```js
 Examples
 ```
-### issuer.combine
-Combine multiple payments into one payment.
+
+### issuer.makeEmptyPurse(name)
+Make an empty purse associated with this kind of right.
 
 - **Arguments:**
-  - `paymentsArray` {Array <Payment>} - A list of payments to combine into a new payment
-  - `name` {String} - Name to call this combination of payments
+  - `name` {String}
+
+- **Returns:**
+  - `{Purse}`
+
+- **Usage:**
+
+```js
+Examples
+```
+
+### issuer.combine()
+Combine multiple payments into one payment.
+
+- `paymentsArray` `{Array <Payment>}` - A list of payments to combine into a new payment
+- `name` {String} - Name to call this combination of payments
 
 - **Returns:**
   - `{Payment}`
@@ -103,12 +102,13 @@ Combine multiple payments into one payment.
 ```js
 Examples
 ```
+
 ### issuer.split
 Split a single payment into multiple payments, according to the amounts and names passed in.
 
 - **Arguments:**
   - `payment` {Payment}
-  - `amountsArray` {Array <Amount>}
+  - `amountsArray` `{Array <Amount>}`
 
 - **Returns:**
   - `{Array <Payment>}`
@@ -118,6 +118,7 @@ Split a single payment into multiple payments, according to the amounts and name
 ```js
 Examples
 ```
+
 ### issuer.claimExactly
 Make a new Payment that has exclusive rights to all the contents of src. If amount does not equal the balance of the src payment, throws error.
 
@@ -134,6 +135,7 @@ Make a new Payment that has exclusive rights to all the contents of src. If amou
 ```js
 Examples
 ```
+
 ### issuer.claimAll
 Make a new Payment that has exclusive rights to all the contents of src.
 
@@ -149,6 +151,7 @@ Make a new Payment that has exclusive rights to all the contents of src.
 ```js
 Examples
 ```
+
 ### issuer.burnExactly
 Burn all of the rights from src. If amount does not equal the balance of the src payment, throw error.
 
@@ -164,6 +167,7 @@ Burn all of the rights from src. If amount does not equal the balance of the src
 ```js
 Examples
 ```
+
 ### issuer.burnAll
 Burn all of the rights from src.
 
@@ -178,6 +182,8 @@ Burn all of the rights from src.
 ```js
 Examples
 ```
+
+
 ## MintMaker
 Makes Mints.
 
