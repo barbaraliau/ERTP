@@ -1,4 +1,6 @@
 module.exports = {
+  /* --- FOR DEPLOYEMENT TO GITHUB PAGES--- */
+  base:  '/Documentation/', // name of the repo
   /* --- HOME PAGE --- */
   title: 'ERTP 0.x', // title for the site. prefix for all page titles and displayed in the navbar
   description: 'Electronic Rights Transfer Protocol (ERTP). A smart contract framework for exchanging electronic rights', // desc for the site; rendered as a tag in the page HTML
