@@ -63,9 +63,9 @@ interface Assay (Amount (Quantity, Label)) {
   /** Returns true if the leftAmount contains the rightAmount. */
   includes(leftAmount :Amount, rightAmount :Amount) -> (boolean);
 
-  /** 
+  /**
    * Returns true if the leftAmount equals the rightAmount. We assume
-   * that if includes is true in both directions, equals is also true 
+   * that if includes is true in both directions, equals is also true
    */
   equals(leftAmount :Amount, rightAmount :Amount) -> (boolean);
 
@@ -90,7 +90,7 @@ interface Assay (Amount (Quantity, Label)) {
  *
  * Every amount created by the Assay will have the same label, but recipients
  * cannot use the label by itself to verify that a purported amount is
- * authentic, since the label can be copied. 
+ * authentic, since the label can be copied.
  */
 struct Label {
   issuer :Issuer;

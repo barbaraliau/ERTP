@@ -36,7 +36,7 @@ Returns the actual source of the Installation.
 Examples
 ```
 ### contractHost.redeem(invite)
-Seat invitations are packaged as payments from the Invite Issuer. Redeeming an invite returns a seat object with an arbitrary interface (the interface is at the discretion of the contract) which supports interaction according to the terms.
+Seat invitations are packaged as payments from the Invite Assay. Redeeming an invite returns a seat object with an arbitrary interface (the interface is at the discretion of the contract) which supports interaction according to the terms.
 
 - `invite` `{Payment}`
 - **Returns:** `{Object}`
@@ -46,10 +46,11 @@ Seat invitations are packaged as payments from the Invite Issuer. Redeeming an i
 Examples
 ```
 
-### contractHost.getInviteIssuer()
-The issuer allows holders of seat invitations to get exclusive access to a Seat.
+### contractHost.getInviteAssay()
+The assay allows holders of seat invitations to get exclusive access to a Seat.
 
-- **Returns:** `{Issuer}`
+- **Returns:** `{Assay}`
+
 - **Usage:**
 
 ```js
@@ -72,13 +73,13 @@ Create a new InviteMaker, then call the Contract's start() method and return its
 Examples
 ```
 
-### installation.checkAmount(installation, inviteAmount, terms)
+### installation.checkAssetDesc(installation, inviteAssetDesc, terms)
 The writer of the contract can provide methods to help users of the contract verify that the terms of the contract match their expectation. These methods are defined with the installation as the first parameter, so the verifiers can validate that the caller's invitation was issued by the same one. The invocation by clients should omit this parameter, as they will be supplied with a copy of the function with that information already supplied.
 
 Users usually want to validate their invitation, the terms of the deal they're attempting to participate in, and which seat they are taking.
 
 - `installation` `{Installation}`
-- `inviteAmount` `{Amount}`
+- `inviteAssetDesc` `{AssetDesc}`
 - `terms` `{Terms}`
 # No return listed for this method
 - **Returns:**
@@ -93,14 +94,15 @@ Contracts are pass-by-text.
 
 The ContractHost's install() method is called on the source code for a contract. The contract needs to have a start() method with arguments as described below. Creating the contract object by calling evaluate() on the source code enables the ContractHost to guarantee to its clients that the resulting object implements that specific algorithm, and doesn't have any hidden powers.
 
-The form of the 'terms' argument to the contract's start() method is also completely up to the individual contract. It should represent all the information a participant needs in order to know they're participating in the contract they intended. As an example, the 'escrow' contract represents a simple exchange of one bundle of goods for another. Escrow's terms object has the 'amount's to be traded as 'left' and 'right', which correspond to the amounts being offered and collected by the respective parties. The Object returned by escrow is an array containing two invitations, but this isn't required. The representation is flexible enough to support trading of money, non-fungible items, or partially-executed positions in other contracts among other possibilities. Other contracts take different paths.
+
+The form of the 'terms' argument to the contract's start() method is also completely up to the individual contract. It should represent all the information a participant needs in order to know they're participating in the contract they intended. As an example, the 'escrow' contract represents a simple exchange of one bundle of goods for another. Escrow's terms object has the 'assetDesc's to be traded as 'left' and 'right', which correspond to the assetDescs being offered and collected by the respective parties. The Object returned by escrow is an array containing two invitations, but this isn't required. The representation is flexible enough to support trading of money, non-fungible items, or partially-executed positions in other contracts among other possibilities. Other contracts take different paths.
 
 Javascript gives access to the source from a function, but not from an object. We make the source accessible to the ContractHost by having contracts export a record containing the source. The contract can also define methods that can be called by participants in the contract to validate that the terms they expect the contract to have been installed with are in agreement with the contract.
 
 ```js
 const escrowExchangeSrcs = {
   start: `${escrowExchange.start}`,
-  checkAmount: `${escrowExchange.checkAmount}`,
+  checkAssetDesc: `${escrowExchange.checkAssetDesc}`,
 };
 ```
 
